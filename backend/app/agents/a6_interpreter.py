@@ -15,6 +15,7 @@ from app.agents.guard import (
 from app.config import Settings
 from app.contracts import ClaimType, EvidenceClaim, RelevanceScore
 from app.llm.client import LLMClient, LLMError
+from app.llm.governor import BudgetExceeded
 from app.scoring.engine import MACRO_LABELS
 
 BLOCKS = (
@@ -42,6 +43,29 @@ ROLE_ACTIONS = {
     "TREASURER": "проверить валютную и процентную экспозицию, лимиты и хеджирование",
     "CHIEF_ACCOUNTANT": "проверить влияние на отчетность, налоговые и учетные оценки",
     "OTHER": "оценить влияние на операционные и финансовые показатели",
+}
+
+ROLE_GUIDANCE = {
+    "CEO": (
+        "Фокус роли CEO: стратегические риски, конкуренты, регулирование, "
+        "секторные сдвиги, санкции, изменение спроса."
+    ),
+    "CFO": (
+        "Фокус роли CFO: стоимость долга и фондирования, валютные риски, "
+        "ковенанты, рефинансирование, ключевая ставка и курс рубля."
+    ),
+    "TREASURER": (
+        "Фокус роли Treasurer: ликвидность, депозиты, хеджирование, "
+        "траектория ставки, долговой рынок, расчетные риски."
+    ),
+    "CHIEF_ACCOUNTANT": (
+        "Фокус роли главного бухгалтера: изменения в отчетности, налогах "
+        "и учете, сроки и регуляторные требования."
+    ),
+    "OTHER": (
+        "Фокус роли: операционная экспозиция, поставщики, логистика "
+        "и влияние на ежедневные процессы."
+    ),
 }
 
 SYSTEM_PROMPT = """Ты — A6 Interpreter в системе Alfa Radar.
@@ -100,6 +124,7 @@ class Interpretation:
     prompt_tokens: int | None = None
     completion_tokens: int | None = None
     cached: bool = False
+    critic_payload: dict[str, Any] = field(default_factory=dict)
 
 
 def _jsonable(value: Any) -> Any:
@@ -156,7 +181,10 @@ class A6Interpreter:
         self.llm = llm_client or LLMClient(settings)
 
     def interpret(
-        self, context: CaseContext, relevance: RelevanceScore
+        self,
+        context: CaseContext,
+        relevance: RelevanceScore,
+        prefer_fallback: bool = False,
     ) -> Interpretation:
         allowed_sources = [context.event_id] + [
             str(chunk["source_id"])
@@ -164,6 +192,13 @@ class A6Interpreter:
             if chunk.get("source_id")
         ]
         allowed_features = company_feature_names(context.company, context.graph)
+        if prefer_fallback:
+            return Interpretation(
+                blocks=self._fallback(context, relevance),
+                method="deterministic_correction",
+                model=None,
+                error=None,
+            )
         if self.llm.enabled:
             try:
                 blocks = self._llm_blocks(
@@ -177,6 +212,14 @@ class A6Interpreter:
                     prompt_tokens=usage.get("prompt_tokens"),
                     completion_tokens=usage.get("completion_tokens"),
                     cached=bool(usage.get("cached")),
+                )
+            except BudgetExceeded as exc:
+                return Interpretation(
+                    blocks=self._fallback(
+                        context, relevance, budget_exceeded=True
+                    ),
+                    method="deterministic_fallback",
+                    error=f"BudgetExceeded: {str(exc)[:300]}",
                 )
             except (LLMError, ValidationError, ValueError, TypeError, KeyError) as exc:
                 return Interpretation(
@@ -197,6 +240,7 @@ class A6Interpreter:
         event_payload.pop("raw_text", None)
         prompt = {
             "role": context.role.value,
+            "role_guidance": ROLE_GUIDANCE.get(context.role.value, ROLE_GUIDANCE["OTHER"]),
             "company": company_view(context.company, context.graph),
             "event": event_payload,
             "bank_research_sources": [
@@ -306,7 +350,10 @@ class A6Interpreter:
         return blocks
 
     def _fallback(
-        self, context: CaseContext, relevance: RelevanceScore
+        self,
+        context: CaseContext,
+        relevance: RelevanceScore,
+        budget_exceeded: bool = False,
     ) -> dict[str, list[EvidenceClaim]]:
         event = context.event
         company = context.company
@@ -395,7 +442,7 @@ class A6Interpreter:
                 confidence=0.65,
             ),
         ]
-        return {
+        blocks = {
             "what_happened": what_happened,
             "why_it_matters": why_it_matters,
             "consequences": consequences,
@@ -403,6 +450,14 @@ class A6Interpreter:
             "bank_view": bank_view,
             "basis": basis,
         }
+        if budget_exceeded:
+            for name, claims in blocks.items():
+                for index, claim in enumerate(claims):
+                    if claim.type == ClaimType.AI_INFERENCE:
+                        blocks[name][index] = claim.model_copy(
+                            update={"confidence": round(claim.confidence * 0.6, 2)}
+                        )
+        return blocks
 
     def _consequences(
         self, event: Any, company: dict[str, Any], source_id: str

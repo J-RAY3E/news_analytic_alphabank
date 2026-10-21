@@ -23,6 +23,7 @@ logs/
 .DS_Store
 data/cache/
 data/audit/
+data/agent/
 data/insights/
 data/traces/
 data/feedback/

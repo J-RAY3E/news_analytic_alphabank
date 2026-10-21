@@ -9,6 +9,7 @@ from typing import Any
 
 from openai import OpenAI
 
+from app.agents.guard import ModelAudit
 from app.config import Settings
 from app.llm.config import LLMConfig, load_llm_config
 from app.llm.governor import BudgetExceeded, CostGovernor
@@ -27,11 +28,15 @@ class LLMClient:
     ) -> None:
         self.settings = settings
         self.config = config or load_llm_config(str(settings.llm_config))
+        env_budget = float(settings.llm_daily_budget_rub or 0)
+        if env_budget > 0 and env_budget < self.config.daily_budget_rub:
+            self.config.daily_budget_rub = env_budget
         self.governor = governor or CostGovernor(
             self.config, settings.path("cache", "llm_usage.jsonl")
         )
         self.cache_dir = settings.path("cache", "llm")
         self.cache_dir.mkdir(parents=True, exist_ok=True)
+        self.audit = ModelAudit(settings)
         self.last_usage: dict[str, Any] | None = None
 
     @property
@@ -159,8 +164,18 @@ class LLMClient:
                 errors.append("total timeout exceeded")
                 break
             estimated = self._estimate_cost(model, system, user, max_tokens)
-            self.governor.check(estimated)
             started = time.monotonic()
+            try:
+                self.governor.check(estimated)
+            except BudgetExceeded as exc:
+                self.audit.record(
+                    model=model,
+                    purpose=purpose,
+                    status="BLOCKED",
+                    latency_ms=0,
+                    error=str(exc)[:300],
+                )
+                raise
             try:
                 client = OpenAI(
                     api_key=self.settings.llm_api_key,
@@ -202,6 +217,16 @@ class LLMClient:
                 )
                 if use_cache:
                     self._write_cache(cache_path, payload, model)
+                elapsed = int((time.monotonic() - started) * 1000)
+                self.audit.record(
+                    model=model,
+                    purpose=purpose,
+                    status="OK",
+                    latency_ms=elapsed,
+                    prompt_tokens=prompt_tokens,
+                    completion_tokens=completion_tokens,
+                    cost_rub=round(cost, 6),
+                )
                 self.last_usage = {
                     "model": model,
                     "prompt_tokens": prompt_tokens,
@@ -214,6 +239,13 @@ class LLMClient:
                 raise
             except Exception as exc:
                 elapsed = int((time.monotonic() - started) * 1000)
+                self.audit.record(
+                    model=model,
+                    purpose=purpose,
+                    status="FAILED",
+                    latency_ms=elapsed,
+                    error=type(exc).__name__,
+                )
                 errors.append(f"{model}@{base_url} after {elapsed}ms: {type(exc).__name__}")
                 continue
         raise LLMError("all LLM attempts failed: " + "; ".join(errors))

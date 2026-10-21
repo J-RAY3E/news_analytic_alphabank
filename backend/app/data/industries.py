@@ -69,7 +69,10 @@ class IndustryCatalog(BaseModel):
 
 @lru_cache
 def load_industry_catalog(path: str | Path) -> IndustryCatalog:
-    resolved = Path(path).resolve()
+    base_path = Path(path)
+    if not base_path.is_absolute():
+        base_path = Path(__file__).resolve().parents[3] / base_path
+    resolved = base_path.resolve()
     with resolved.open("r", encoding="utf-8") as handle:
         payload = yaml.safe_load(handle)
     if not isinstance(payload, dict):

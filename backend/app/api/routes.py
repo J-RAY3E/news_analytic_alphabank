@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -27,6 +28,8 @@ from app.data.store import DataStore
 from app.contracts import Role
 
 router = APIRouter()
+
+TRACE_ID_PATTERN = re.compile(r"^trace:[A-Za-z0-9_.-]{1,64}$")
 
 
 def get_store(request: Request) -> DataStore:
@@ -183,6 +186,8 @@ def create_insight(request: Request, payload: InsightRequest) -> InsightResponse
     tags=["insight"],
 )
 def get_trace(request: Request, trace_id: str) -> TraceResponse:
+    if not TRACE_ID_PATTERN.match(trace_id):
+        raise BadRequest("invalid trace id format")
     path = get_app_settings(request).path("traces", f"{trace_id}.json")
     if not path.exists():
         raise NotFound(f"trace not found: {trace_id}")

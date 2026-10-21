@@ -19,6 +19,24 @@ class Planner:
         query = build_retrieval_query(context.event)
         return [
             PlanStep(
+                tool="plan_write",
+                params={
+                    "trace_id": context.trace_id,
+                    "plan": [
+                        "get_company_profile",
+                        "get_graph_exposure",
+                        "get_event",
+                        "search_bank_analytics",
+                    ],
+                },
+                purpose="Зафиксировать план (A1 plan_write)",
+            ),
+            PlanStep(
+                tool="budget_check",
+                params={},
+                purpose="Проверить остаток дневного бюджета LLM (A1 budget_check)",
+            ),
+            PlanStep(
                 tool="get_company_profile",
                 params={"company_id": context.company_id},
                 purpose="Профиль и продукты компании",

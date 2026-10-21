@@ -9,12 +9,17 @@ from app.config import Settings
 from app.contracts import Role
 
 ALLOWED_TOOLS = {
+    "plan_write",
+    "budget_check",
     "get_company_profile",
     "get_graph_exposure",
     "get_event",
     "search_bank_analytics",
     "get_bank_card",
+    "search_news",
 }
+
+SOFT_TOOLS = {"plan_write", "budget_check"}
 
 SENSITIVE_COMPANY_FIELDS = {
     "company_id",
@@ -132,8 +137,17 @@ class Guard:
         for key in ("company_id", "event_id"):
             if key in params and not str(params[key]).strip():
                 raise ToolNotAllowed(f"empty parameter: {key}")
-        if "k" in params and not (1 <= int(params["k"]) <= 10):
-            raise ToolNotAllowed("k must be between 1 and 10")
+        if "k" in params:
+            try:
+                k_value = int(params["k"])
+            except (TypeError, ValueError) as exc:
+                raise ToolNotAllowed("k must be an integer") from exc
+            if not (1 <= k_value <= 10):
+                raise ToolNotAllowed("k must be between 1 and 10")
+        if tool == "plan_write":
+            plan = params.get("plan")
+            if not isinstance(plan, list) or not 1 <= len(plan) <= 8:
+                raise ToolNotAllowed("plan_write expects a plan list with 1..8 steps")
 
     def audit(
         self,
@@ -146,6 +160,7 @@ class Guard:
         error: str | None = None,
     ) -> None:
         record = {
+            "kind": "tool",
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "tool": tool,
             "role": role.value,
@@ -153,6 +168,40 @@ class Guard:
             "status": status,
             "latency_ms": latency_ms,
             "result_count": result_count,
+            "error": error,
+        }
+        self.audit_path.parent.mkdir(parents=True, exist_ok=True)
+        with self.audit_path.open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(record, ensure_ascii=False) + "\n")
+
+
+class ModelAudit:
+    """Appends every model call (success or failure) to the shared audit log."""
+
+    def __init__(self, settings: Settings) -> None:
+        self.audit_path = settings.path("audit", "tool_calls.jsonl")
+
+    def record(
+        self,
+        model: str,
+        purpose: str,
+        status: str,
+        latency_ms: int,
+        prompt_tokens: int | None = None,
+        completion_tokens: int | None = None,
+        cost_rub: float | None = None,
+        error: str | None = None,
+    ) -> None:
+        record = {
+            "kind": "model",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "model": model,
+            "purpose": purpose,
+            "status": status,
+            "latency_ms": latency_ms,
+            "prompt_tokens": prompt_tokens,
+            "completion_tokens": completion_tokens,
+            "cost_rub": cost_rub,
             "error": error,
         }
         self.audit_path.parent.mkdir(parents=True, exist_ok=True)

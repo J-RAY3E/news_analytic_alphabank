@@ -156,3 +156,10 @@ def test_validation_error_format(client: TestClient):
     body = response.json()
     assert body["error"]["code"] == "validation_error"
     assert body["error"]["details"]["errors"]
+
+
+def test_trace_rejects_path_traversal(client: TestClient):
+    response = client.get("/trace/..%2F..%2Fetc%2Fpasswd")
+    assert response.status_code in (400, 404)
+    if response.status_code == 400:
+        assert response.json()["error"]["code"] == "bad_request"

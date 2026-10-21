@@ -3,20 +3,28 @@ from __future__ import annotations
 import json
 from uuid import uuid4
 
-from app.agents.a6_interpreter import A6Interpreter
+from app.agents.a6_interpreter import A6Interpreter, Interpretation
 from app.agents.context import CaseContext
+from app.agents.critic import CriticResult, evaluate
 from app.agents.executor import Executor
 from app.agents.guard import Guard
 from app.agents.planner import Planner
 from app.agents.tools import ToolRegistry
 from app.config import Settings
-from app.contracts import Insight, Role, TraceStepKind
+from app.contracts import (
+    Insight,
+    Role,
+    TraceStepKind,
+    TraceStepStatus,
+)
 from app.data.industries import load_industry_catalog
 from app.data.store import DataStore
 from app.llm.client import LLMClient
 from app.research.index import ResearchIndex, load_research_index
 from app.scoring.config import load_scoring_config
-from app.scoring.engine import score_event
+from app.scoring.engine import RelevanceScore, score_event
+
+MAX_CORRECTION_LOOPS = 2
 
 
 class InsightOrchestrator:
@@ -35,7 +43,7 @@ class InsightOrchestrator:
         self.index = index
         self.llm = llm or LLMClient(settings)
         self.guard = Guard(settings)
-        self.tools = ToolRegistry(store, settings, index=index)
+        self.tools = ToolRegistry(store, settings, index=index, llm=self.llm)
         self.executor = Executor(self.tools, self.guard)
         self.planner = Planner()
         self.interpreter = A6Interpreter(settings, self.llm)
@@ -72,7 +80,7 @@ class InsightOrchestrator:
             catalog=load_industry_catalog(str(self.settings.industries_config)),
             graph_row=context.graph,
         )
-        interpretation = self.interpreter.interpret(context, relevance)
+        interpretation = self._interpret_with_critic(context, relevance)
         context.add_trace(
             TraceStepKind.COMPLETED,
             "interpret",
@@ -85,6 +93,7 @@ class InsightOrchestrator:
                 "relevance_score": relevance.score,
                 "bank_sources": len(context.bank_chunks),
                 "cached": interpretation.cached,
+                "critic": interpretation.critic_payload,
             },
         )
         insight = Insight(
@@ -103,6 +112,55 @@ class InsightOrchestrator:
         )
         self._persist(insight)
         return insight
+
+    def _interpret_with_critic(
+        self, context: CaseContext, relevance: RelevanceScore
+    ) -> "Interpretation":
+        interpretation = None
+        critic: CriticResult | None = None
+        for attempt in range(MAX_CORRECTION_LOOPS):
+            interpretation = self.interpreter.interpret(
+                context, relevance, prefer_fallback=attempt > 0
+            )
+            critic = evaluate(
+                interpretation.blocks,
+                context.event_id,
+                context.bank_chunks,
+            )
+            context.add_trace(
+                TraceStepKind.CRITIC_CHECK,
+                "deterministic_checks",
+                status=TraceStepStatus.OK
+                if critic.passed
+                else TraceStepStatus.FAILED,
+                payload={
+                    "attempt": attempt + 1,
+                    "checks": critic.checks,
+                    "failed": critic.failed,
+                },
+            )
+            if critic.passed:
+                interpretation.critic_payload = {
+                    "passed": True,
+                    "correction_iterations": attempt,
+                }
+                return interpretation
+            if attempt + 1 < MAX_CORRECTION_LOOPS:
+                context.add_trace(
+                    TraceStepKind.RETRY,
+                    "critic_revision",
+                    payload={
+                        "reason": "critic_failed",
+                        "failed": critic.failed,
+                        "strategy": "deterministic_revision",
+                    },
+                )
+        interpretation.critic_payload = {
+            "passed": False,
+            "failed": critic.failed,
+            "correction_iterations": MAX_CORRECTION_LOOPS - 1,
+        }
+        return interpretation
 
     def _persist(self, insight: Insight) -> None:
         insights_dir = self.settings.path("insights")

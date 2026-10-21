@@ -17,6 +17,7 @@ from app.contracts import (
     Sentiment,
 )
 from app.llm.client import LLMClient, LLMError
+from app.llm.governor import BudgetExceeded
 
 T = TypeVar("T", bound=Enum)
 
@@ -51,7 +52,7 @@ class ExtractionResult:
     method: str
 
 
-def _coerce_enum(value: Any, enum_cls: type[T], default: T) -> T:
+def _coerce_enum_or_none(value: Any, enum_cls: type[T]) -> T | None:
     if isinstance(value, enum_cls):
         return value
     if isinstance(value, str):
@@ -66,16 +67,18 @@ def _coerce_enum(value: Any, enum_cls: type[T], default: T) -> T:
             "SUPPLY": "SUPPLY_CHAIN",
             "LABOR": "LABOR_COST",
             "CREDIT": "CREDIT_ACCESS",
-            "POSITIVE": "POSITIVE",
-            "NEGATIVE": "NEGATIVE",
-            "NEUTRAL": "NEUTRAL",
-            "MIXED": "MIXED",
         }
-        if normalized in aliases:
+        target = aliases.get(normalized)
+        if target:
             for item in enum_cls:
-                if item.value == aliases[normalized]:
+                if item.value == target:
                     return item
-    return default
+    return None
+
+
+def _coerce_enum(value: Any, enum_cls: type[T], default: T) -> T:
+    coerced = _coerce_enum_or_none(value, enum_cls)
+    return coerced if coerced is not None else default
 
 
 def _string_list(value: Any) -> list[str] | None:
@@ -128,6 +131,8 @@ class A2NewsIntake:
                 temperature=0.0,
             )
             event = self._merge(base_event, payload)
+        except BudgetExceeded:
+            return ExtractionResult(event=base_event, method="deterministic_fallback")
         except (LLMError, ValidationError, ValueError, TypeError):
             return ExtractionResult(event=base_event, method="deterministic_fallback")
         return ExtractionResult(event=event, method="llm")
@@ -179,7 +184,11 @@ class A2NewsIntake:
             data["entities"] = entities
         if macro is not None:
             data["macro_factors"] = [
-                _coerce_enum(item, MacroFactor, MacroFactor.DEMAND) for item in macro
+                factor
+                for factor in (
+                    _coerce_enum_or_none(item, MacroFactor) for item in macro
+                )
+                if factor is not None
             ]
         if figures:
             data["figures"] = [figure.model_dump() for figure in figures]

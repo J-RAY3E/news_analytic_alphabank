@@ -1,4 +1,6 @@
+import json
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -52,8 +54,6 @@ def test_disabled_client_refuses_calls(tmp_path: Path):
 
 
 def test_llm_cache_reuses_response_without_second_call(tmp_path: Path, monkeypatch):
-    from types import SimpleNamespace
-
     calls = {"count": 0}
 
     class FakeCompletions:
@@ -89,3 +89,58 @@ def test_llm_cache_reuses_response_without_second_call(tmp_path: Path, monkeypat
     assert calls["count"] == 1
     assert client.last_usage["cached"] is True
     assert client.last_usage["prompt_tokens"] == 0
+
+
+def test_llm_failure_is_audited(tmp_path: Path, monkeypatch):
+    class BrokenCompletions:
+        def create(self, **kwargs):
+            raise RuntimeError("boom")
+
+    class FakeOpenAI:
+        def __init__(self, **kwargs):
+            self.chat = SimpleNamespace(completions=BrokenCompletions())
+
+    monkeypatch.setattr("app.llm.client.OpenAI", FakeOpenAI)
+    settings = Settings(
+        data_dir=tmp_path,
+        llm_config=ROOT / "config" / "llm.yaml",
+        llm_enabled=True,
+        llm_api_key="test-key",
+    )
+    client = LLMClient(settings)
+    with pytest.raises(LLMError):
+        client.complete_json(purpose="reasoning", system="s", user="u")
+    audit_path = tmp_path / "audit" / "tool_calls.jsonl"
+    assert audit_path.exists()
+    records = [
+        json.loads(line)
+        for line in audit_path.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    model_records = [record for record in records if record.get("kind") == "model"]
+    assert model_records
+    assert all(record["status"] == "FAILED" for record in model_records)
+
+
+def test_llm_budget_block_is_audited(tmp_path: Path):
+    settings = Settings(
+        data_dir=tmp_path,
+        llm_config=ROOT / "config" / "llm.yaml",
+        llm_enabled=True,
+        llm_api_key="test-key",
+        llm_daily_budget_rub=0.000001,
+    )
+    client = LLMClient(settings)
+    assert client.config.daily_budget_rub == pytest.approx(0.000001)
+    with pytest.raises(BudgetExceeded):
+        client.complete_json(purpose="reasoning", system="s", user="u")
+    audit_path = tmp_path / "audit" / "tool_calls.jsonl"
+    records = [
+        json.loads(line)
+        for line in audit_path.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    assert any(
+        record["kind"] == "model" and record["status"] == "BLOCKED"
+        for record in records
+    )

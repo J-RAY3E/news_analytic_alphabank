@@ -1,13 +1,28 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime, timezone
 from typing import Any
 
 from app.config import Settings
 from app.contracts import NormalizedEvent
 from app.core.errors import NotFound
 from app.data.store import DataStore
+from app.llm.client import LLMClient
+from app.llm.config import load_llm_config
+from app.llm.governor import CostGovernor
 from app.research.index import ResearchIndex
+
+REGISTRY_TOOLS = {
+    "plan_write",
+    "budget_check",
+    "get_company_profile",
+    "get_graph_exposure",
+    "get_event",
+    "search_bank_analytics",
+    "get_bank_card",
+    "search_news",
+}
 
 
 class ToolRegistry:
@@ -17,6 +32,7 @@ class ToolRegistry:
         settings: Settings,
         index: ResearchIndex | None = None,
         retriever: Any = None,
+        llm: LLMClient | None = None,
     ) -> None:
         self.store = store
         self.settings = settings
@@ -26,6 +42,14 @@ class ToolRegistry:
             from app.agents.a4_retriever import A4Retriever
 
             self.retriever = A4Retriever(index)
+        governor = getattr(llm, "governor", None)
+        if governor is not None:
+            self.governor = governor
+        else:
+            self.governor = CostGovernor(
+                load_llm_config(str(settings.llm_config)),
+                settings.path("cache", "llm_usage.jsonl"),
+            )
 
     def _graph_row(self, company_id: str) -> dict[str, Any] | None:
         try:
@@ -38,6 +62,21 @@ class ToolRegistry:
         if hasattr(row, "iloc") and getattr(row, "ndim", 1) > 1:
             row = row.iloc[0]
         return row.to_dict()
+
+    def plan_write(self, trace_id: str, plan: list[dict[str, Any]]) -> dict[str, Any]:
+        path = self.settings.path("agent", "plans.jsonl")
+        path.parent.mkdir(parents=True, exist_ok=True)
+        record = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "trace_id": trace_id,
+            "plan": plan,
+        }
+        with path.open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(record, ensure_ascii=False) + "\n")
+        return {"written": str(path), "steps": len(plan)}
+
+    def budget_check(self) -> dict[str, Any]:
+        return self.governor.summary()
 
     def get_company_profile(self, company_id: str) -> dict[str, Any]:
         return self.store.company(company_id)
@@ -58,14 +97,44 @@ class ToolRegistry:
             return []
         return self.retriever.get_card(doc_id)
 
+    def search_news(self, query: str, k: int = 5) -> list[dict[str, Any]]:
+        tokens = [
+            token for token in query.casefold().split() if len(token) > 2
+        ]
+        scored: list[tuple[int, int, NormalizedEvent]] = []
+        for event in self.store.events_or_empty():
+            haystack = " ".join(
+                (
+                    event.title,
+                    event.summary,
+                    " ".join(event.entities),
+                    " ".join(event.regions),
+                    " ".join(event.countries),
+                    " ".join(event.sectors),
+                )
+            ).casefold()
+            score = sum(1 for token in tokens if token in haystack)
+            if score > 0:
+                scored.append((score, event.noise_score, event))
+        scored.sort(key=lambda item: (-item[0], item[1]))
+        results: list[dict[str, Any]] = []
+        for _, _, event in scored[: max(1, min(k, 10))]:
+            results.append(
+                {
+                    "event_id": event.event_id,
+                    "title": event.title,
+                    "summary": event.summary,
+                    "event_type": event.event_type.value,
+                    "published_at": event.source.published_at.isoformat()
+                    if event.source.published_at
+                    else None,
+                    "source_id": event.source.source_id,
+                }
+            )
+        return results
+
     def call(self, tool: str, **params: Any) -> Any:
-        if tool not in {
-            "get_company_profile",
-            "get_graph_exposure",
-            "get_event",
-            "search_bank_analytics",
-            "get_bank_card",
-        }:
+        if tool not in REGISTRY_TOOLS:
             raise ValueError(f"unknown tool: {tool}")
         return getattr(self, tool)(**params)
 

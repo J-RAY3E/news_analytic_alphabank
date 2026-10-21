@@ -9,7 +9,12 @@ from app.agents.planner import PlanStep
 from app.agents.tools import ToolRegistry
 from app.contracts import TraceStepKind, TraceStepStatus
 
-OPTIONAL_TOOLS = {"get_graph_exposure", "search_bank_analytics"}
+OPTIONAL_TOOLS = {
+    "plan_write",
+    "budget_check",
+    "get_graph_exposure",
+    "search_bank_analytics",
+}
 
 
 def _result_summary(result: Any) -> dict[str, Any]:
@@ -70,7 +75,12 @@ class Executor:
                     payload={"error": type(exc).__name__},
                 )
                 if step.tool in OPTIONAL_TOOLS:
-                    context.results[step.tool] = [] if step.tool == "search_bank_analytics" else None
+                    if step.tool == "search_bank_analytics":
+                        context.results[step.tool] = []
+                    elif step.tool == "budget_check":
+                        context.results[step.tool] = {}
+                    else:
+                        context.results[step.tool] = None
                     continue
                 raise
             elapsed = int((time.monotonic() - started) * 1000)
@@ -93,7 +103,7 @@ class Executor:
                 step.params,
                 status="OK",
                 latency_ms=elapsed,
-                result_count=len(result) if isinstance(result, list) else 1,
+                result_count=_result_summary(result).get("count"),
             )
             context.add_trace(
                 TraceStepKind.TOOL_RESULT,

@@ -5,12 +5,14 @@ import pytest
 from app.agents.a2_news import A2NewsIntake
 from app.agents.a4_retriever import A4Retriever
 from app.agents.a6_interpreter import A6Interpreter
+from app.agents.critic import evaluate
 from app.agents.orchestrator import InsightOrchestrator
 from app.agents.context import CaseContext
 from app.agents.guard import Guard, ToolNotAllowed, company_feature_names
-from app.agents.tools import build_retrieval_query
+from app.agents.planner import Planner
+from app.agents.tools import ToolRegistry, build_retrieval_query
 from app.config import Settings
-from app.contracts import Role
+from app.contracts import ClaimType, EvidenceClaim, Role
 from app.data.industries import load_industry_catalog
 from app.data.store import DataStore
 from app.llm.client import LLMError
@@ -90,12 +92,12 @@ def make_context(settings: Settings) -> tuple[CaseContext, object]:
     return context, relevance
 
 
-def claim(text, claim_type, sources):
+def claim(text, claim_type, sources, features=None):
     return {
         "text": text,
         "type": claim_type,
         "source_ids": sources,
-        "company_features": [],
+        "company_features": features or [],
         "confidence": 0.8,
     }
 
@@ -104,7 +106,12 @@ def valid_ledger(bank_id: str) -> dict:
     return {
         "what_happened": [claim("Ставка сохранена на 16%.", "FACT", ["news:syn-001"])],
         "why_it_matters": [
-            claim("Компания зависит от стоимости фондирования.", "AI_INFERENCE", ["news:syn-001"])
+            claim(
+                "Компания зависит от стоимости фондирования.",
+                "AI_INFERENCE",
+                ["news:syn-001"],
+                ["CL_PRODUCT_RKO_MARK"],
+            )
         ],
         "consequences": [
             claim("Процентные расходы останутся повышенными.", "AI_INFERENCE", [bank_id])
@@ -204,6 +211,118 @@ def test_guard_blocks_unknown_tools_and_writes_audit(tmp_path: Path):
         guard.authorize("delete_company", Role.CEO, {})
     guard.audit("get_event", Role.CEO, {"event_id": "news:syn-001"}, "OK", 1, 1)
     assert (tmp_path / "audit" / "tool_calls.jsonl").exists()
+
+
+def test_planner_includes_plan_write_and_budget_check(tmp_path: Path):
+    settings = make_settings(tmp_path)
+    context, _ = make_context(settings)
+    steps = Planner().build(context)
+    tools = [step.tool for step in steps]
+    assert tools[0] == "plan_write"
+    assert tools[1] == "budget_check"
+    assert len(tools) <= 6
+    assert "search_bank_analytics" in tools
+
+
+def test_registry_plan_write_budget_and_news_search(tmp_path: Path):
+    settings = make_settings(tmp_path)
+    context, _ = make_context(settings)
+    registry = ToolRegistry(
+        DataStore(
+            settings,
+            companies_path=ROOT / "data" / "processed" / "companies.parquet",
+            graph_path=ROOT / "data" / "processed" / "graph_features.parquet",
+            news_path=ROOT / "data" / "news" / "events.jsonl",
+        ),
+        settings,
+        index=None,
+        retriever=None,
+    )
+    written = registry.plan_write(
+        trace_id="trace:abc123",
+        plan=[{"tool": "get_company_profile"}],
+    )
+    assert written["steps"] == 1
+    assert (tmp_path / "agent" / "plans.jsonl").exists()
+    budget = registry.budget_check()
+    assert budget["budget_rub"] == 500
+    results = registry.search_news("ключевая ставка банк", k=3)
+    assert results
+    assert all(item["event_id"].startswith("news:") for item in results)
+
+
+def test_critic_passes_valid_ledger_and_flags_missing_features(tmp_path: Path):
+    settings = make_settings(tmp_path)
+    context, _ = make_context(settings)
+
+    def make_claim(claim_type, features=None):
+        return EvidenceClaim(
+            text="текст",
+            type=claim_type,
+            source_ids=[context.event_id],
+            company_features=features or [],
+            confidence=0.8,
+        )
+
+    ok = {
+        "what_happened": [make_claim(ClaimType.FACT)],
+        "why_it_matters": [make_claim(ClaimType.AI_INFERENCE, ["CL_PRODUCT_RKO_MARK"])],
+        "consequences": [make_claim(ClaimType.AI_INFERENCE)],
+        "actions": [make_claim(ClaimType.AI_INFERENCE)],
+        "bank_view": [
+            EvidenceClaim(
+                text="текст",
+                type=ClaimType.BANK_VIEW,
+                source_ids=[context.bank_chunks[0]["source_id"]],
+                company_features=[],
+                confidence=0.8,
+            )
+        ],
+        "basis": [make_claim(ClaimType.FACT)],
+    }
+    result = evaluate(ok, context.event_id, context.bank_chunks)
+    assert result.passed, result.failed
+
+    bad = dict(ok)
+    bad["why_it_matters"] = [make_claim(ClaimType.AI_INFERENCE)]
+    failed = evaluate(bad, context.event_id, context.bank_chunks)
+    assert not failed.passed
+    assert "why_references_company_features" in failed.failed
+
+
+def test_orchestrator_critic_loop_rewrites_failed_ledger(tmp_path: Path):
+    settings = make_settings(tmp_path)
+    store = DataStore(
+        settings,
+        companies_path=ROOT / "data" / "processed" / "companies.parquet",
+        graph_path=ROOT / "data" / "processed" / "graph_features.parquet",
+        news_path=ROOT / "data" / "news" / "events.jsonl",
+    )
+    index = load_research_index(str(ROOT / "data" / "index" / "research_chunks.jsonl"))
+    chunks = [
+        result.to_dict()
+        for result in index.search(
+            build_retrieval_query(store.event("news:syn-001")), k=2
+        )
+    ]
+    bad_ledger = valid_ledger(chunks[0]["source_id"])
+    bad_ledger["why_it_matters"] = [
+        claim(
+            "Компания зависит от стоимости фондирования.",
+            "AI_INFERENCE",
+            ["news:syn-001"],
+        )
+    ]
+    insight = InsightOrchestrator(
+        settings, store, index=index, llm=FakeLLM(payload=bad_ledger)
+    ).run("U_57706", "news:syn-001", Role.CFO)
+    kinds = [event.kind.value for event in insight.trace]
+    assert "CRITIC_CHECK" in kinds
+    assert "RETRY" in kinds
+    last = insight.trace[-1]
+    assert last.kind.value == "COMPLETED"
+    assert last.payload["critic"]["passed"] is True
+    assert last.payload["method"] == "deterministic_correction"
 
 
 def test_company_features_include_product_flags(tmp_path: Path):
