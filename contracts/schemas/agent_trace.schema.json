@@ -1,0 +1,134 @@
+{
+  "$defs": {
+    "TraceStepKind": {
+      "enum": [
+        "PLAN",
+        "TOOL_CALL",
+        "TOOL_RESULT",
+        "CRITIC_CHECK",
+        "RETRY",
+        "COMPLETED",
+        "ERROR"
+      ],
+      "title": "TraceStepKind",
+      "type": "string"
+    },
+    "TraceStepStatus": {
+      "enum": [
+        "OK",
+        "FAILED",
+        "SKIPPED"
+      ],
+      "title": "TraceStepStatus",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "trace_id": {
+      "minLength": 1,
+      "title": "Trace Id",
+      "type": "string"
+    },
+    "seq": {
+      "minimum": 0,
+      "title": "Seq",
+      "type": "integer"
+    },
+    "kind": {
+      "$ref": "#/$defs/TraceStepKind"
+    },
+    "name": {
+      "minLength": 1,
+      "title": "Name",
+      "type": "string"
+    },
+    "status": {
+      "$ref": "#/$defs/TraceStepStatus",
+      "default": "OK"
+    },
+    "timestamp": {
+      "format": "date-time",
+      "title": "Timestamp",
+      "type": "string"
+    },
+    "source_ids": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Source Ids",
+      "type": "array"
+    },
+    "company_features": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Company Features",
+      "type": "array"
+    },
+    "model": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Model"
+    },
+    "prompt_tokens": {
+      "anyOf": [
+        {
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Prompt Tokens"
+    },
+    "completion_tokens": {
+      "anyOf": [
+        {
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Completion Tokens"
+    },
+    "latency_ms": {
+      "anyOf": [
+        {
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Latency Ms"
+    },
+    "payload": {
+      "additionalProperties": true,
+      "title": "Payload",
+      "type": "object"
+    }
+  },
+  "required": [
+    "trace_id",
+    "seq",
+    "kind",
+    "name"
+  ],
+  "title": "TraceEvent",
+  "type": "object"
+}

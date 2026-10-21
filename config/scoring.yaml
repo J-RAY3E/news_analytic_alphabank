@@ -1,0 +1,134 @@
+version: "1.0"
+
+weights:
+  sector_match: 0.30
+  supply_chain_exposure: 0.20
+  product_match: 0.20
+  geo_match: 0.15
+  scale_weight: 0.10
+  recency: 0.05
+
+sector:
+  exact_division: 1.0
+  same_section: 0.65
+  unknown: 0.0
+
+supply_chain:
+  counterparty_share_cap: 1.0
+  min_share: 0.01
+  all_sectors: 0.6
+
+product:
+  default: 0.0
+  factor_features:
+    KEY_RATE:
+      CL_PRODUCT_LOA_MARK: 1.0
+      CL_PRODUCT_LEA_MARK: 0.8
+      CL_PRODUCT_DEP_MARK: 0.5
+    INFLATION:
+      CL_PRODUCT_LOA_MARK: 0.8
+      CL_PRODUCT_DEP_MARK: 0.8
+      CL_PRODUCT_ZPP_MARK: 0.3
+    FX_RATE:
+      FTS_FLAG: 1.0
+      FACTORING_MARK: 0.4
+      CL_PRODUCT_GAR_MARK: 0.3
+    BOND_YIELD:
+      CL_PRODUCT_DEP_MARK: 0.7
+      CL_PRODUCT_LOA_MARK: 0.5
+    COMMODITY_PRICE:
+      FTS_FLAG: 0.5
+      CL_PRODUCT_LEA_MARK: 0.4
+    DEMAND:
+      CL_PRODUCT_RKO_MARK: 0.6
+      CL_PRODUCT_ZPP_MARK: 0.4
+      CL_PRODUCT_LOA_MARK: 0.3
+    SUPPLY_CHAIN:
+      FACTORING_MARK: 0.8
+      CL_PRODUCT_GAR_MARK: 0.5
+    REGULATION:
+      CL_PRODUCT_RKO_MARK: 0.5
+      CL_PRODUCT_ZPP_MARK: 0.4
+    TAX:
+      CL_PRODUCT_ZPP_MARK: 0.6
+      CL_PRODUCT_RKO_MARK: 0.4
+    SANCTIONS:
+      FTS_FLAG: 1.0
+      FACTORING_MARK: 0.5
+    LABOR_COST:
+      CL_PRODUCT_ZPP_MARK: 1.0
+    CREDIT_ACCESS:
+      CL_PRODUCT_LOA_MARK: 1.0
+      CL_PRODUCT_GAR_MARK: 0.8
+      CL_PRODUCT_LEA_MARK: 0.8
+      FACTORING_MARK: 0.6
+
+geo:
+  region_exact: 1.0
+  country_in_fts: 0.9
+  country_domestic: 0.6
+  no_geo: 0.5
+  unknown: 0.0
+  domestic_country: Россия
+
+scale:
+  aggregation: max
+  missing: 0.3
+  revenue_bands:
+    - min: 15000000000
+      value: 1.0
+      label: "≥ 15 млрд ₽"
+    - min: 5000000000
+      value: 0.8
+      label: "5–15 млрд ₽"
+    - min: 1000000000
+      value: 0.6
+      label: "1–5 млрд ₽"
+    - min: 300000000
+      value: 0.4
+      label: "0.3–1 млрд ₽"
+    - min: 0
+      value: 0.2
+      label: "< 0.3 млрд ₽"
+  employee_bands:
+    - min: 251
+      value: 1.0
+      label: "> 250"
+    - min: 101
+      value: 0.8
+      label: "101–250"
+    - min: 16
+      value: 0.5
+      label: "16–100"
+    - min: 0
+      value: 0.2
+      label: "< 15"
+
+recency:
+  half_life_days: 7
+  max_age_days: 120
+  missing: 0.5
+  future: 1.0
+
+roles:
+  tie_break_tolerance: 0.03
+  preferences:
+    CEO:
+      - REGULATION
+      - SANCTIONS
+      - COMPETITION
+      - DEMAND
+      - FX
+    CFO:
+      - MONETARY_POLICY
+      - FX
+      - TAX
+      - REGULATION
+    TREASURER:
+      - MONETARY_POLICY
+      - FX
+      - LOGISTICS
+    CHIEF_ACCOUNTANT:
+      - TAX
+      - REGULATION
+    OTHER: []

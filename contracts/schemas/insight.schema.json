@@ -1,0 +1,358 @@
+{
+  "$defs": {
+    "ClaimType": {
+      "enum": [
+        "FACT",
+        "BANK_VIEW",
+        "AI_INFERENCE"
+      ],
+      "title": "ClaimType",
+      "type": "string"
+    },
+    "EvidenceClaim": {
+      "additionalProperties": false,
+      "properties": {
+        "text": {
+          "maxLength": 4000,
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/$defs/ClaimType"
+        },
+        "source_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Source Ids",
+          "type": "array"
+        },
+        "company_features": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Company Features",
+          "type": "array"
+        },
+        "confidence": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Confidence",
+          "type": "number"
+        }
+      },
+      "required": [
+        "text",
+        "type",
+        "confidence"
+      ],
+      "title": "EvidenceClaim",
+      "type": "object"
+    },
+    "RelevanceFactor": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "value": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Value",
+          "type": "number"
+        },
+        "weight": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Weight",
+          "type": "number"
+        },
+        "contribution": {
+          "minimum": 0.0,
+          "title": "Contribution",
+          "type": "number"
+        },
+        "explanation": {
+          "title": "Explanation",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "value",
+        "weight",
+        "contribution",
+        "explanation"
+      ],
+      "title": "RelevanceFactor",
+      "type": "object"
+    },
+    "RelevanceScore": {
+      "additionalProperties": false,
+      "properties": {
+        "score": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Score",
+          "type": "number"
+        },
+        "factors": {
+          "items": {
+            "$ref": "#/$defs/RelevanceFactor"
+          },
+          "title": "Factors",
+          "type": "array"
+        },
+        "config_version": {
+          "title": "Config Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "score",
+        "factors",
+        "config_version"
+      ],
+      "title": "RelevanceScore",
+      "type": "object"
+    },
+    "Role": {
+      "enum": [
+        "CEO",
+        "CFO",
+        "TREASURER",
+        "CHIEF_ACCOUNTANT",
+        "OTHER"
+      ],
+      "title": "Role",
+      "type": "string"
+    },
+    "TraceEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "trace_id": {
+          "minLength": 1,
+          "title": "Trace Id",
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 0,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "kind": {
+          "$ref": "#/$defs/TraceStepKind"
+        },
+        "name": {
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/TraceStepStatus",
+          "default": "OK"
+        },
+        "timestamp": {
+          "format": "date-time",
+          "title": "Timestamp",
+          "type": "string"
+        },
+        "source_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Source Ids",
+          "type": "array"
+        },
+        "company_features": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Company Features",
+          "type": "array"
+        },
+        "model": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model"
+        },
+        "prompt_tokens": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Prompt Tokens"
+        },
+        "completion_tokens": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Completion Tokens"
+        },
+        "latency_ms": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Latency Ms"
+        },
+        "payload": {
+          "additionalProperties": true,
+          "title": "Payload",
+          "type": "object"
+        }
+      },
+      "required": [
+        "trace_id",
+        "seq",
+        "kind",
+        "name"
+      ],
+      "title": "TraceEvent",
+      "type": "object"
+    },
+    "TraceStepKind": {
+      "enum": [
+        "PLAN",
+        "TOOL_CALL",
+        "TOOL_RESULT",
+        "CRITIC_CHECK",
+        "RETRY",
+        "COMPLETED",
+        "ERROR"
+      ],
+      "title": "TraceStepKind",
+      "type": "string"
+    },
+    "TraceStepStatus": {
+      "enum": [
+        "OK",
+        "FAILED",
+        "SKIPPED"
+      ],
+      "title": "TraceStepStatus",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "insight_id": {
+      "minLength": 1,
+      "title": "Insight Id",
+      "type": "string"
+    },
+    "company_id": {
+      "minLength": 1,
+      "title": "Company Id",
+      "type": "string"
+    },
+    "event_id": {
+      "minLength": 1,
+      "title": "Event Id",
+      "type": "string"
+    },
+    "role": {
+      "$ref": "#/$defs/Role"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "what_happened": {
+      "items": {
+        "$ref": "#/$defs/EvidenceClaim"
+      },
+      "title": "What Happened",
+      "type": "array"
+    },
+    "why_it_matters": {
+      "items": {
+        "$ref": "#/$defs/EvidenceClaim"
+      },
+      "title": "Why It Matters",
+      "type": "array"
+    },
+    "consequences": {
+      "items": {
+        "$ref": "#/$defs/EvidenceClaim"
+      },
+      "title": "Consequences",
+      "type": "array"
+    },
+    "actions": {
+      "items": {
+        "$ref": "#/$defs/EvidenceClaim"
+      },
+      "title": "Actions",
+      "type": "array"
+    },
+    "bank_view": {
+      "items": {
+        "$ref": "#/$defs/EvidenceClaim"
+      },
+      "title": "Bank View",
+      "type": "array"
+    },
+    "basis": {
+      "items": {
+        "$ref": "#/$defs/EvidenceClaim"
+      },
+      "title": "Basis",
+      "type": "array"
+    },
+    "relevance_score": {
+      "$ref": "#/$defs/RelevanceScore"
+    },
+    "trace": {
+      "items": {
+        "$ref": "#/$defs/TraceEvent"
+      },
+      "title": "Trace",
+      "type": "array"
+    }
+  },
+  "required": [
+    "insight_id",
+    "company_id",
+    "event_id",
+    "role",
+    "what_happened",
+    "why_it_matters",
+    "consequences",
+    "actions",
+    "bank_view",
+    "basis",
+    "relevance_score"
+  ],
+  "title": "Insight",
+  "type": "object"
+}

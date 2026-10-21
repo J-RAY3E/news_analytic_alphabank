@@ -1,0 +1,277 @@
+{
+  "$defs": {
+    "EventType": {
+      "enum": [
+        "MONETARY_POLICY",
+        "FX",
+        "REGULATION",
+        "SANCTIONS",
+        "LOGISTICS",
+        "COMMODITIES",
+        "DEMAND",
+        "COMPETITION",
+        "TAX",
+        "LABOR",
+        "TECHNOLOGY",
+        "OTHER"
+      ],
+      "title": "EventType",
+      "type": "string"
+    },
+    "Figure": {
+      "additionalProperties": false,
+      "properties": {
+        "label": {
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "title": "Value"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Unit"
+        }
+      },
+      "required": [
+        "label",
+        "value"
+      ],
+      "title": "Figure",
+      "type": "object"
+    },
+    "MacroFactor": {
+      "enum": [
+        "KEY_RATE",
+        "INFLATION",
+        "FX_RATE",
+        "BOND_YIELD",
+        "COMMODITY_PRICE",
+        "DEMAND",
+        "SUPPLY_CHAIN",
+        "REGULATION",
+        "TAX",
+        "SANCTIONS",
+        "LABOR_COST",
+        "CREDIT_ACCESS"
+      ],
+      "title": "MacroFactor",
+      "type": "string"
+    },
+    "RiskOpportunity": {
+      "enum": [
+        "RISK",
+        "OPPORTUNITY",
+        "BOTH",
+        "NEUTRAL"
+      ],
+      "title": "RiskOpportunity",
+      "type": "string"
+    },
+    "Sentiment": {
+      "enum": [
+        "POSITIVE",
+        "NEUTRAL",
+        "NEGATIVE",
+        "MIXED"
+      ],
+      "title": "Sentiment",
+      "type": "string"
+    },
+    "SourceRef": {
+      "additionalProperties": false,
+      "properties": {
+        "source_id": {
+          "minLength": 1,
+          "title": "Source Id",
+          "type": "string"
+        },
+        "name": {
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Url"
+        },
+        "published_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Published At"
+        },
+        "page": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Page"
+        },
+        "language": {
+          "default": "ru",
+          "title": "Language",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source_id",
+        "name"
+      ],
+      "title": "SourceRef",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "event_id": {
+      "pattern": "^news:[A-Za-z0-9_.-]+$",
+      "title": "Event Id",
+      "type": "string"
+    },
+    "title": {
+      "maxLength": 500,
+      "minLength": 3,
+      "title": "Title",
+      "type": "string"
+    },
+    "summary": {
+      "default": "",
+      "maxLength": 4000,
+      "title": "Summary",
+      "type": "string"
+    },
+    "raw_text": {
+      "default": "",
+      "maxLength": 100000,
+      "title": "Raw Text",
+      "type": "string"
+    },
+    "event_type": {
+      "$ref": "#/$defs/EventType"
+    },
+    "sectors": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Sectors",
+      "type": "array"
+    },
+    "regions": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Regions",
+      "type": "array"
+    },
+    "countries": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Countries",
+      "type": "array"
+    },
+    "macro_factors": {
+      "items": {
+        "$ref": "#/$defs/MacroFactor"
+      },
+      "title": "Macro Factors",
+      "type": "array"
+    },
+    "entities": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Entities",
+      "type": "array"
+    },
+    "figures": {
+      "items": {
+        "$ref": "#/$defs/Figure"
+      },
+      "title": "Figures",
+      "type": "array"
+    },
+    "sentiment": {
+      "$ref": "#/$defs/Sentiment",
+      "default": "NEUTRAL"
+    },
+    "risk_opportunity": {
+      "$ref": "#/$defs/RiskOpportunity",
+      "default": "NEUTRAL"
+    },
+    "is_speculation": {
+      "default": false,
+      "title": "Is Speculation",
+      "type": "boolean"
+    },
+    "noise_score": {
+      "default": 0.0,
+      "maximum": 1.0,
+      "minimum": 0.0,
+      "title": "Noise Score",
+      "type": "number"
+    },
+    "confidence": {
+      "default": 0.5,
+      "maximum": 1.0,
+      "minimum": 0.0,
+      "title": "Confidence",
+      "type": "number"
+    },
+    "source": {
+      "$ref": "#/$defs/SourceRef"
+    },
+    "ingested_at": {
+      "format": "date-time",
+      "title": "Ingested At",
+      "type": "string"
+    }
+  },
+  "required": [
+    "event_id",
+    "title",
+    "event_type",
+    "source"
+  ],
+  "title": "NormalizedEvent",
+  "type": "object"
+}

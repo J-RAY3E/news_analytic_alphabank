@@ -1,0 +1,29 @@
+version: "1.0"
+
+daily_budget_rub: 500
+cache_ttl_days: 7
+request_timeout_seconds: 60
+total_timeout_seconds: 150
+
+routing:
+  extraction: google/gemma-4-26b-a4b-it
+  reasoning: deepseek/deepseek-v4.1-flash
+  fallback: google/gemma-4-26b-a4b-it
+  long: moonshotai/kimi-k2.6
+
+models:
+  google/gemma-4-26b-a4b-it:
+    input_rub_per_1m: 10
+    output_rub_per_1m: 30
+  z-ai/glm-5.3-flash:
+    input_rub_per_1m: 30
+    output_rub_per_1m: 120
+  deepseek/deepseek-v4.1-flash:
+    input_rub_per_1m: 15
+    output_rub_per_1m: 60
+  moonshotai/kimi-k2.6:
+    input_rub_per_1m: 40
+    output_rub_per_1m: 160
+  qwen/qwen3-vl-30b-a3b-instruct:
+    input_rub_per_1m: 20
+    output_rub_per_1m: 80

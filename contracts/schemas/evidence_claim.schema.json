@@ -1,0 +1,52 @@
+{
+  "$defs": {
+    "ClaimType": {
+      "enum": [
+        "FACT",
+        "BANK_VIEW",
+        "AI_INFERENCE"
+      ],
+      "title": "ClaimType",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "text": {
+      "maxLength": 4000,
+      "minLength": 1,
+      "title": "Text",
+      "type": "string"
+    },
+    "type": {
+      "$ref": "#/$defs/ClaimType"
+    },
+    "source_ids": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Source Ids",
+      "type": "array"
+    },
+    "company_features": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Company Features",
+      "type": "array"
+    },
+    "confidence": {
+      "maximum": 1.0,
+      "minimum": 0.0,
+      "title": "Confidence",
+      "type": "number"
+    }
+  },
+  "required": [
+    "text",
+    "type",
+    "confidence"
+  ],
+  "title": "EvidenceClaim",
+  "type": "object"
+}

@@ -1,0 +1,36 @@
+{
+  "input_events": 25,
+  "unique_events": 23,
+  "duplicates": {
+    "news:syn-025": "news:syn-004",
+    "news:syn-024": "news:syn-001"
+  },
+  "clusters": {
+    "news:syn-001": "news:syn-001",
+    "news:syn-002": "news:syn-002",
+    "news:syn-003": "news:syn-003",
+    "news:syn-004": "news:syn-004",
+    "news:syn-005": "news:syn-005",
+    "news:syn-006": "news:syn-006",
+    "news:syn-007": "news:syn-007",
+    "news:syn-008": "news:syn-008",
+    "news:syn-009": "news:syn-009",
+    "news:syn-010": "news:syn-010",
+    "news:syn-011": "news:syn-011",
+    "news:syn-012": "news:syn-012",
+    "news:syn-013": "news:syn-013",
+    "news:syn-014": "news:syn-014",
+    "news:syn-015": "news:syn-015",
+    "news:syn-016": "news:syn-016",
+    "news:syn-017": "news:syn-017",
+    "news:syn-018": "news:syn-018",
+    "news:syn-019": "news:syn-019",
+    "news:syn-020": "news:syn-020",
+    "news:syn-021": "news:syn-021",
+    "news:syn-022": "news:syn-022",
+    "news:syn-023": "news:syn-023",
+    "news:syn-025": "news:syn-004",
+    "news:syn-024": "news:syn-001"
+  },
+  "threshold": 0.88
+}
