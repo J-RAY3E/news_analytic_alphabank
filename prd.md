@@ -161,68 +161,78 @@ Priority: P0 must have, P1 should have, P2 nice to have.
 
 ```mermaid
 flowchart LR
-    U[Executive user] --> UI[Alfa-Business Radar web app  
-Personalized feed · insight · trace · chat · new-news input]
-    UI -->|HTTPS / authenticated session| API[FastAPI backend  
-REST API · authentication · role/company authorization]
+    U["Executive user"] --> UI["Alfa-Business Radar web app<br/>Personalized feed · insight · trace · chat · new-news input"]
+    UI -->|HTTPS / authenticated session| API["FastAPI backend<br/>REST API · authentication · role/company authorization"]
+    API -->|All requests| A0["A0 · Guard middleware (not an LLM)<br/>RBAC · row-level security · PII redaction<br/>Schema / step / token limits · injection defense"]
 
-    subgraph Ingestion[Ingestion and preparation]
+    subgraph Intake[Ingestion and preparation]
         RSS[RSS / HTML news adapters] --> N[Normalization and deduplication]
         PASTE[User-pasted text or URL] --> N
-        N --> EXTRACT[News extraction and classification  
-Cheap allowed model]
-        PDF[Alfa-Bank research PDFs] --> CHUNK[Text extraction and chunking  
-doc ID · page · chunk ID]
+        N --> A2["A2 · News Intake<br/>Classification · entity/fact extraction · deduplication<br/>Gemma 4 · schema-validated JSON"]
+        PDF[Alfa-Bank research PDFs] --> CHUNK["Text extraction and chunking<br/>doc ID · page · chunk ID"]
     end
 
     subgraph Context[Company context and deterministic ranking]
-        COMPANY[Company and product data] --> PROFILE[Company profile builder]
-        PAYMENTS[Payment links and group membership] --> GRAPH[Exposure graph and features]
-        PROFILE --> STORE[(Application data store)]
+        COMPANY[Company and product data]
+        PAYMENTS[Payment links and group membership]
+        A3["A3 · Profiler<br/>Company profile · exposure features · aggregates"]
+        GRAPH[Exposure graph and features]
+        STORE[(Application data store)]
+        NEWS[(Normalized news store)]
+        A5["A5 · Ranker<br/>Deterministic score · MMR diversification · explanations"]
+        FEED[Ranked events with factor explanations]
+        A3 --> GRAPH
+        A3 --> STORE
         GRAPH --> STORE
-        EXTRACT --> NEWS[(Normalized news store)]
-        EXTRACT --> SCORE[Configurable deterministic relevance scorer]
-        PROFILE --> SCORE
-        GRAPH --> SCORE
-        SCORE --> FEED[Ranked events with factor explanations]
+        A2 --> NEWS
+        A2 --> A5
+        A3 --> A5
+        GRAPH --> A5
+        A5 --> FEED
     end
 
-    subgraph Agent[Agent service]
-        ORCH[Orchestrator / shared context] --> PLAN[Planner]
-        PLAN --> EXEC[Executor]
-        EXEC --> TOOLS[Allowlisted read-only tools]
-        TOOLS --> INTERP[Interpreter]
-        INTERP --> LEDGER[Typed Evidence Ledger]
+    subgraph Agents[Agent service]
+        ORCH[Orchestrator / shared context] --> A1["A1 · Orchestrator / Planner<br/>GLM-5.3-Flash · JSON plan · budget / stop control"]
+        A1 --> EXEC[Executor]
+        EXEC --> TOOLS[Allowlisted read-only tool registry]
+        TOOLS -. dispatches modules .-> A2
+        TOOLS -. dispatches modules .-> A3
+        TOOLS -. dispatches modules .-> A4["A4 · Retriever<br/>Bank analytics RAG · exact source citations"]
+        TOOLS -. dispatches modules .-> A5
+        TOOLS -. dispatches modules .-> A6["A6 · Interpreter<br/>Role-aware impact · consequences · actions"]
+        A4 --> A6
+        A5 --> A6
+        A6 --> LEDGER[Typed Evidence Ledger]
         LEDGER --> CRITIC[Critic: rule checks + contradiction check]
         CRITIC -->|Pass| RESULT[Insight: six answer blocks + trace]
         CRITIC -->|Fail: max 2 correction loops| EXEC
-        GOVERNOR[LLM router and cost governor  
-model selection · cache · daily budget] -.-> PLAN
-        GOVERNOR -.-> INTERP
+        GOVERNOR["LLM router and cost governor<br/>Model selection · cache · daily budget"] -.-> A1
+        GOVERNOR -.-> A2
+        GOVERNOR -.-> A5
+        GOVERNOR -.-> A6
         GOVERNOR -.-> CRITIC
-        GOVERNOR -.-> EXTRACT
     end
 
-    CHUNK --> VINDEX[(Research / news vector index  
-source IDs retained)]
+    CHUNK --> VINDEX[(Research / news vector index<br/>source IDs retained)]
     FEED --> API
-    API -->|All requests pass policy checks| A0[ A0 Guard middleware  
-RBAC · row-level access · PII redaction · schema / budget limits · injection defense ]
-    A0 -->|Authorized feed read| FEED
-    A0 -->|Authorized insight request| ORCH
-    TOOLS -->|Every tool call is gated| A0
-    A0 --> PROFILE
-    A0 --> GRAPH
-    A0 --> NEWS
-    A0 --> VINDEX
+    A4 -->|Search request| A0
+    A0 -->|Authorized retrieval| VINDEX
+    VINDEX -->|Cited chunks| A4
+    A0 -->|Authorized company context| COMPANY
+    A0 -->|Authorized exposure data| PAYMENTS
+    A0 -->|Authorized news access| NEWS
+    A0 -->|Authorized profile / ranking calls| A3
+    A0 --> A1
+    A0 --> A2
+    A0 --> A5
+    A0 --> A6
+    TOOLS -->|Every tool call passes through A0| A0
     RESULT --> API
     API --> UI
     API --> TRACE[(Insights · feedback · trace storage)]
-    API --> AUDIT[(Append-only audit log  
-tool and model calls)]
+    API --> AUDIT[(Append-only audit log<br/>Tool and model calls)]
     EXEC --> AUDIT
     GOVERNOR --> COST[(Usage and cache records)]
-
     OPS[Docker Compose · logging · deployment] -.-> API
 ```
 
@@ -340,10 +350,6 @@ The agent system is decomposed into a deterministic security boundary (A0) and t
 - **Executor:** executes the approved plan, dispatches A2–A6 functions through the allowlisted registry and A0, and stores outputs in the shared `CaseContext`. It does not grant agents direct access to databases or network tools.
 
 - **Critic:** run deterministic checks first: every `FACT` has a valid source, every `BANK_VIEW` cites a bank document, “why it matters” references company features, and numerical claims agree with sources. Then check for contradictions. On failure, issue a targeted correction/re-search instruction to A1 and the Executor, with no more than 2 correction iterations.
-
-- **Cost Governor:** route extraction/classification to Gemma 4 and reasoning to t
-
-- he selected allowed reasoning model; cache extraction per news item, call `budget_check` before model work, meter tokens/cost, and enforce the RUB 500 daily development budget. Reuse cached work and degrade gracefully when the budget is exhausted.**Shared context:** carry only the request scope, role/company authorization, masked company features, normalized event attributes, retrieved evidence and citations, ranking explanation, plan, budget/verification state, and trace needed for the current insight.
 
 ### 8.6 Security Design
 
@@ -615,16 +621,3 @@ Three owners, each with a clear boundary. Interfaces are frozen on Day 1 so the 
 - ☐ Architecture diagram, OpenAPI spec, data model and test scenarios
 
 - ☐ Demo script rehearsed twice and a backup recording
-
-## 16. Open Questions
-
-- What are the real file names and delimiters for individuals and payments data?
-
-- Exact API base URL and model IDs for the allowed LLMs?
-
-- Which external news sources are officially acceptable to scrape?
-
-- Is there a style guide or component kit for the Alfa-Business interface?
-
-- Will graders use their own unseen news items during the live check?
-
