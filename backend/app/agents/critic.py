@@ -73,11 +73,15 @@ def evaluate(
     positive_markers = ("выраст", "увел", "повышен", "рост", "улучш")
     negative_markers = ("сниз", "паден", "сократ", "ухудш", "отрицател")
     for claim in (blocks.get("consequences") or []) + (blocks.get("bank_view") or []):
-        text = claim.text.casefold()
-        if any(marker in text for marker in positive_markers) and any(
-            marker in text for marker in negative_markers
-        ):
-            contradictions.append(claim.text[:120])
+        if claim.type != ClaimType.AI_INFERENCE:
+            continue
+        for sentence in claim.text.replace(";", ".").split("."):
+            lowered = sentence.casefold()
+            if any(marker in lowered for marker in positive_markers) and any(
+                marker in lowered for marker in negative_markers
+            ):
+                contradictions.append(claim.text[:120])
+                break
     check("no_obvious_contradictions", not contradictions)
 
     return CriticResult(

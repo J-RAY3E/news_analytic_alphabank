@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import base64
 import hashlib
 import json
+import re
 import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -84,7 +86,7 @@ class LLMClient:
 
     @staticmethod
     def _parse_json(content: str) -> dict[str, Any]:
-        cleaned = content.strip()
+        cleaned = re.sub(r"<think>.*?</think>", "", content, flags=re.DOTALL).strip()
         if cleaned.startswith("```"):
             cleaned = cleaned.strip("`")
             if cleaned.lower().startswith("json"):
@@ -183,15 +185,20 @@ class LLMClient:
                     timeout=self.config.request_timeout_seconds,
                     max_retries=0,
                 )
-                response = client.chat.completions.create(
-                    model=model,
-                    messages=[
+                create_kwargs: dict[str, Any] = {
+                    "model": model,
+                    "messages": [
                         {"role": "system", "content": system},
                         {"role": "user", "content": user},
                     ],
-                    temperature=temperature,
-                    max_tokens=max_tokens,
-                )
+                    "temperature": temperature,
+                    "max_tokens": max_tokens,
+                }
+                if "glm" in model:
+                    create_kwargs["extra_body"] = {
+                        "chat_template_kwargs": {"enable_thinking": False}
+                    }
+                response = client.chat.completions.create(**create_kwargs)
                 content = response.choices[0].message.content or ""
                 payload = self._parse_json(content)
                 usage = getattr(response, "usage", None)
@@ -249,3 +256,149 @@ class LLMClient:
                 errors.append(f"{model}@{base_url} after {elapsed}ms: {type(exc).__name__}")
                 continue
         raise LLMError("all LLM attempts failed: " + "; ".join(errors))
+
+    def complete_vision(
+        self,
+        system: str,
+        user: str,
+        image_png: bytes,
+        max_tokens: int = 2000,
+        temperature: float = 0.0,
+        use_cache: bool = True,
+    ) -> str:
+        if not self.enabled:
+            raise LLMError("LLM is disabled or API key is missing")
+        self.last_usage = None
+        primary_model = self.config.routing["vision"]
+        fallback_model = self.config.routing["fallback"]
+        image_hash = hashlib.sha256(image_png).hexdigest()[:16]
+        digest = hashlib.sha256()
+        for part in (primary_model, system, user, image_hash, str(max_tokens), str(temperature)):
+            digest.update(part.encode("utf-8"))
+            digest.update(b"\0")
+        cache_path = self._cache_path(digest.hexdigest())
+        if use_cache:
+            cached = self._read_cache(cache_path, primary_model)
+            if cached is not None:
+                cached_payload, cached_model = cached
+                self.governor.record_usage(
+                    model=cached_model,
+                    purpose="vision",
+                    prompt_tokens=0,
+                    completion_tokens=0,
+                    cost_rub=0.0,
+                    cached=True,
+                )
+                self.last_usage = {
+                    "model": cached_model,
+                    "prompt_tokens": 0,
+                    "completion_tokens": 0,
+                    "cost_rub": 0.0,
+                    "cached": True,
+                }
+                return str(cached_payload.get("text", ""))
+
+        b64 = base64.b64encode(image_png).decode("ascii")
+        data_url = f"data:image/png;base64,{b64}"
+        errors: list[str] = []
+        started_total = time.monotonic()
+        for model, base_url in (
+            (primary_model, self.settings.llm_base_url),
+            (primary_model, self.settings.llm_base_url_fallback),
+            (fallback_model, self.settings.llm_base_url),
+        ):
+            if not base_url:
+                continue
+            if time.monotonic() - started_total > self.config.total_timeout_seconds:
+                errors.append("total timeout exceeded")
+                break
+            estimated = self._estimate_cost(model, system, user, max_tokens)
+            started = time.monotonic()
+            try:
+                self.governor.check(estimated)
+            except BudgetExceeded as exc:
+                self.audit.record(
+                    model=model,
+                    purpose="vision",
+                    status="BLOCKED",
+                    latency_ms=0,
+                    error=str(exc)[:300],
+                )
+                raise
+            try:
+                client = OpenAI(
+                    api_key=self.settings.llm_api_key,
+                    base_url=base_url,
+                    timeout=self.config.request_timeout_seconds,
+                    max_retries=0,
+                )
+                response = client.chat.completions.create(
+                    model=model,
+                    messages=[
+                        {"role": "system", "content": system},
+                        {
+                            "role": "user",
+                            "content": [
+                                {"type": "text", "text": user},
+                                {
+                                    "type": "image_url",
+                                    "image_url": {"url": data_url},
+                                },
+                            ],
+                        },
+                    ],
+                    temperature=temperature,
+                    max_tokens=max_tokens,
+                )
+                content = (response.choices[0].message.content or "").strip()
+                if not content:
+                    raise LLMError("empty vision response")
+                usage = getattr(response, "usage", None)
+                prompt_tokens = int(getattr(usage, "prompt_tokens", 0) or 0)
+                completion_tokens = int(getattr(usage, "completion_tokens", 0) or 0)
+                pricing = self.config.models[model]
+                estimated_actual = (
+                    prompt_tokens * pricing.input_rub_per_1m / 1_000_000
+                    + completion_tokens * pricing.output_rub_per_1m / 1_000_000
+                )
+                self.governor.record_usage(
+                    model=model,
+                    purpose="vision",
+                    prompt_tokens=prompt_tokens,
+                    completion_tokens=completion_tokens,
+                    cost_rub=estimated_actual,
+                )
+                if use_cache:
+                    self._write_cache(cache_path, {"text": content}, model)
+                elapsed = int((time.monotonic() - started) * 1000)
+                self.audit.record(
+                    model=model,
+                    purpose="vision",
+                    status="OK",
+                    latency_ms=elapsed,
+                    prompt_tokens=prompt_tokens,
+                    completion_tokens=completion_tokens,
+                    cost_rub=round(estimated_actual, 6),
+                )
+                self.last_usage = {
+                    "model": model,
+                    "prompt_tokens": prompt_tokens,
+                    "completion_tokens": completion_tokens,
+                    "cost_rub": round(estimated_actual, 6),
+                    "cached": False,
+                }
+                return content
+            except BudgetExceeded:
+                raise
+            except Exception as exc:
+                elapsed = int((time.monotonic() - started) * 1000)
+                self.audit.record(
+                    model=model,
+                    purpose="vision",
+                    status="FAILED",
+                    latency_ms=elapsed,
+                    error=type(exc).__name__,
+                )
+                errors.append(f"{model}@{base_url} after {elapsed}ms: {type(exc).__name__}")
+                continue
+        raise LLMError("all vision attempts failed: " + "; ".join(errors))

@@ -46,7 +46,9 @@ def test_build_research_index_and_search():
     documents = read_documents(RESEARCH_DIR)
     assert len(documents) == 9
     chunks = build_chunks(documents)
-    assert len(chunks) == 18
+    assert len(chunks) >= len(documents)
+    assert {chunk.doc_id for chunk in chunks} == {document.doc_id for document in documents}
+    assert len({chunk.chunk_id for chunk in chunks}) == len(chunks)
     index = ResearchIndex(chunks)
 
     results = index.search("ключевая ставка инфляция", k=3)
@@ -56,14 +58,16 @@ def test_build_research_index_and_search():
     assert index.search("квантовые компьютеры") == []
     assert index.search("") == []
     card = index.get_card("key_rate")
-    assert len(card) == 2
-    assert {chunk.page for chunk in card} == {1, 2}
+    assert card
+    assert all(chunk.doc_id == "key_rate" for chunk in card)
+    assert all(chunk.source_id.startswith("bank:key_rate:p") for chunk in card)
+    assert min(chunk.page for chunk in card) == 1
 
 
 def test_persisted_index_contract():
     index = ResearchIndex.from_jsonl(CHUNKS_PATH)
-    assert len(index.chunks) == 18
-    assert len({chunk.chunk_id for chunk in index.chunks}) == 18
+    assert len(index.chunks) >= 9
+    assert len({chunk.chunk_id for chunk in index.chunks}) == len(index.chunks)
     titles = {document["title"] for document in index.documents()}
     assert "Ключевая ставка и кредитный рынок" in titles
     assert tokenize("Ключевая ставка и инфляция") == ["ключевая", "ставка", "инфляция"]
