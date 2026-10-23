@@ -186,7 +186,7 @@ def test_a6_accepts_valid_llm_ledger(tmp_path: Path):
     fake = FakeLLM(payload=valid_ledger(bank_id))
     interpretation = A6Interpreter(settings, fake).interpret(context, relevance)
     assert interpretation.method == "llm"
-    assert interpretation.model == "deepseek/deepseek-v4.1-flash"
+    assert interpretation.model == fake.config.routing["reasoning"]
     assert interpretation.blocks["what_happened"][0].type.value == "FACT"
     assert interpretation.blocks["bank_view"][0].source_ids == [bank_id]
     assert all(block for block in interpretation.blocks.values())
@@ -376,7 +376,7 @@ def test_orchestrator_llm_path_persists_insight_and_trace(tmp_path: Path):
     last = insight.trace[-1]
     assert last.kind.value == "COMPLETED"
     assert last.payload["method"] == "llm"
-    assert last.model == "deepseek/deepseek-v4.1-flash"
+    assert last.model == fake.config.routing["reasoning"]
     assert last.prompt_tokens == 120
     assert last.completion_tokens == 240
     assert {event.kind.value for event in insight.trace} >= {

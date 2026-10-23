@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -84,7 +85,7 @@ class LLMClient:
 
     @staticmethod
     def _parse_json(content: str) -> dict[str, Any]:
-        cleaned = content.strip()
+        cleaned = re.sub(r"<think>.*?</think>", "", content, flags=re.DOTALL).strip()
         if cleaned.startswith("```"):
             cleaned = cleaned.strip("`")
             if cleaned.lower().startswith("json"):
@@ -183,15 +184,20 @@ class LLMClient:
                     timeout=self.config.request_timeout_seconds,
                     max_retries=0,
                 )
-                response = client.chat.completions.create(
-                    model=model,
-                    messages=[
+                create_kwargs: dict[str, Any] = {
+                    "model": model,
+                    "messages": [
                         {"role": "system", "content": system},
                         {"role": "user", "content": user},
                     ],
-                    temperature=temperature,
-                    max_tokens=max_tokens,
-                )
+                    "temperature": temperature,
+                    "max_tokens": max_tokens,
+                }
+                if "glm" in model:
+                    create_kwargs["extra_body"] = {
+                        "chat_template_kwargs": {"enable_thinking": False}
+                    }
+                response = client.chat.completions.create(**create_kwargs)
                 content = response.choices[0].message.content or ""
                 payload = self._parse_json(content)
                 usage = getattr(response, "usage", None)
