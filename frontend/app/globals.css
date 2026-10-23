@@ -1,0 +1,174 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary: #ef3124;
+  --primary-press: #c4271c;
+  --surface-dark: #121212;
+  --surface-dark-raised: #212124;
+  --surface-dark-button: #2c2c2e;
+  --hairline-on-dark: #3a3a3d;
+  --on-dark-mute: #a0a3ab;
+  --ink: #121212;
+  --ink-secondary: #2c2c2e;
+  --ink-mute: #6d7078;
+  --canvas: #ffffff;
+  --canvas-soft: #f3f4f5;
+  --canvas-track: #edeef0;
+  --canvas-grey: #e8ecee;
+  --hairline: #e3e5e8;
+  --hairline-input: #c9cdd2;
+  --cyan: #01d2f1;
+  --cyan-soft: #6ae9ed;
+  --blue: #266fff;
+  --blue-deep: #0a3fb5;
+  --blue-bg: #e3edff;
+  --lilac: #dfbfff;
+  --lilac-soft: #f1e4ff;
+  --lilac-deep: #9b5de5;
+  --success: #108c3d;
+  --success-bg: #e3f5e8;
+  --risk-bg: #ffe5e2;
+  --danger: #c4271c;
+  --shadow-1: 0 1px 3px rgba(18, 18, 18, 0.08);
+  --shadow-2: 0 8px 24px rgba(18, 18, 18, 0.10), 0 2px 6px rgba(18, 18, 18, 0.05);
+}
+
+body {
+  font-family: var(--font-sans), system-ui, -apple-system, "Segoe UI", sans-serif;
+  color: var(--ink);
+  background: var(--canvas-soft);
+}
+
+.tnum {
+  font-feature-settings: "tnum";
+}
+
+.text-display-lg {
+  font-size: 32px;
+  font-weight: 300;
+  line-height: 1.15;
+  letter-spacing: -0.64px;
+}
+.text-display-md {
+  font-size: 26px;
+  font-weight: 300;
+  line-height: 1.2;
+  letter-spacing: -0.26px;
+}
+.text-heading-lg {
+  font-size: 22px;
+  font-weight: 300;
+  line-height: 1.25;
+  letter-spacing: -0.22px;
+}
+.text-heading-md {
+  font-size: 20px;
+  font-weight: 300;
+  line-height: 1.4;
+  letter-spacing: -0.2px;
+}
+.text-heading-sm {
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1.4;
+}
+.text-body-lg {
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+.text-body-md {
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+.text-body-tabular {
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.4;
+  letter-spacing: -0.14px;
+  font-feature-settings: "tnum";
+}
+.text-number-score {
+  font-size: 28px;
+  font-weight: 300;
+  line-height: 1;
+  letter-spacing: -0.56px;
+  font-feature-settings: "tnum";
+}
+.text-caption {
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.4;
+  letter-spacing: -0.13px;
+  font-feature-settings: "tnum";
+}
+.text-label-claim {
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.15;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+.text-micro {
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.4;
+}
+.text-mono-trace {
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+@media (max-width: 767px) {
+  .text-display-lg {
+    font-size: 26px;
+    letter-spacing: -0.26px;
+  }
+  .text-display-md {
+    font-size: 22px;
+    letter-spacing: -0.22px;
+  }
+}
+
+*:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+input:focus-visible,
+textarea:focus-visible {
+  outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: var(--hairline);
+  border-radius: 3px;
+}
+.scrollbar-thin-dark::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.scrollbar-thin-dark::-webkit-scrollbar-thumb {
+  background: var(--hairline-on-dark);
+  border-radius: 3px;
+}
