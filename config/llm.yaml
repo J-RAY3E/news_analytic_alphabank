@@ -7,7 +7,7 @@ total_timeout_seconds: 150
 
 routing:
   extraction: google/gemma-4-26b-a4b-it
-  reasoning: google/gemma-4-26b-a4b-it
+  reasoning: deepseek/deepseek-v4.1-flash
   fallback: google/gemma-4-26b-a4b-it
   long: moonshotai/kimi-k2.6
   vision: qwen/qwen3-vl-30b-a3b-instruct

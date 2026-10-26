@@ -121,6 +121,7 @@ class LLMClient:
         max_tokens: int = 1800,
         temperature: float = 0.2,
         use_cache: bool = True,
+        json_mode: bool = True,
     ) -> dict[str, Any]:
         if not self.enabled:
             raise LLMError("LLM is disabled or API key is missing")
@@ -198,7 +199,20 @@ class LLMClient:
                     create_kwargs["extra_body"] = {
                         "chat_template_kwargs": {"enable_thinking": False}
                     }
-                response = client.chat.completions.create(**create_kwargs)
+                response = None
+                for use_json in ([True, False] if json_mode else [False]):
+                    attempt_kwargs = dict(create_kwargs)
+                    if use_json:
+                        attempt_kwargs["response_format"] = {"type": "json_object"}
+                    try:
+                        response = client.chat.completions.create(**attempt_kwargs)
+                        break
+                    except Exception as exc:  # noqa: BLE001
+                        if use_json and "response_format" in str(exc).lower():
+                            continue
+                        raise
+                if response is None:
+                    raise LLMError("no completion returned")
                 content = response.choices[0].message.content or ""
                 payload = self._parse_json(content)
                 usage = getattr(response, "usage", None)

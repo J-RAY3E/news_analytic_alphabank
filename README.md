@@ -73,7 +73,7 @@ Components (team-implemented):
 
 ## Quickstart (Docker)
 
-Requires Docker with Compose v2.
+Requires Docker with Compose v2. Full setup and troubleshooting: [`setup.md`](setup.md).
 
 ```bash
 docker compose up --build
@@ -101,7 +101,7 @@ present. For deterministic mode leave it absent; to go live run
 | `LLM_BASE_URL_FALLBACK` | Secondary endpoint | `https://api.alfahack-gateway26.ru/v1` |
 | `LLM_ENABLED` | Force LLM on/off | `true` |
 | `LLM_MODEL_EXTRACTION` | Extraction model (A2) | `google/gemma-4-26b-a4b-it` |
-| `LLM_MODEL_REASONING` | Reasoning model (A6) | `google/gemma-4-26b-a4b-it` |
+| `LLM_MODEL_REASONING` | Reasoning model (A6) | `deepseek/deepseek-v4.1-flash` |
 | `LLM_MODEL_VISION` | Scanned-PDF OCR model | `qwen/qwen3-vl-30b-a3b-instruct` |
 | `LLM_DAILY_BUDGET_RUB` | Daily budget guard | `500` |
 | `NEXT_PUBLIC_API_URL` | API base for the browser | `http://localhost:8000` |
@@ -113,9 +113,9 @@ weights in [`config/scoring.yaml`](config/scoring.yaml).
 
 ### LLM modes
 
-- **With `LLM_API_KEY`** — A2 extraction and A6 interpretation call the live
-  gateway (Gemma 4 by default), with a GLM failover and a Qwen3-VL model used to
-  OCR the scanned research PDFs. Results are cached on disk
+- **With `LLM_API_KEY`** — A2 extraction runs on Gemma 4 and A6 interpretation on
+  DeepSeek-V4.1-Flash (see `config/llm.yaml` routing), with a model failover and a
+  Qwen3-VL model used to OCR the scanned research PDFs. Results are cached on disk
   (`data/cache/llm/`, TTL 7 days) and every call is written to the audit log.
 - **Without a key** — the pipeline still returns a complete, typed six-block
   insight from the deterministic fallback in
@@ -321,10 +321,23 @@ designed but not enforced in this prototype. Full description:
   parameter.
 - The follow-up chat returns deterministic answers derived from the stored
   insight, not a fresh LLM turn.
-- Cost-quality dashboard is a single daily budget meter.
-- Free-chat, native-product mention and graph depth are scope-cut.
+- Cost and quality metrics live on a separate admin page (`/admin/metrics`).
+- Free-chat and graph depth are scope-cut.
+
+## Team
+
+**Team name:** Alfa Radar · Alfa Hack 2026
+
+| Member | Phone | Email |
+| --- | --- | --- |
+| Атеефа ЭмадСалехКарама | +7 952 215-6083 | emad.ateefa2013@gmail.com |
+| Кантунья Жан | +7 903 435-7855 | jeancarlo20092005@gmail.com |
+| Субагио Сатрио | +7 981 904-6049 | brahmantoro.subagio@gmail.com |
 
 ## Submission
 
-- Release tag / commit hash: recorded at submission time.
+- Repository: `github.com/J-RAY3E/news_analytic_alphabank` (branch `system-design`).
+- Setup: [`setup.md`](setup.md) · User guide: [`guide.md`](guide.md).
+- Release identifier: tag **`v1.0.0-alfa-hack-2026`** (the submission commit is the
+  target of this annotated tag; the exact hash is `git rev-parse v1.0.0-alfa-hack-2026`).
 - Grader access for a private repo: `alfa-hack-2026`.
