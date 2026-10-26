@@ -5,7 +5,14 @@ import type { FeedItem } from "@/lib/api/types";
 import { EVENT_TYPE_LABELS, FACTOR_NAME_LABELS, MACRO_FACTOR_LABELS } from "@/lib/api/types";
 import { cn, formatScore, formatTime } from "@/lib/utils";
 import { Card } from "@/components/ui/Card";
-import { DirectionChip, ReasonChip, ScoreBadge } from "@/components/ui/chips";
+import {
+  DirectionChip,
+  ExternalSourceChip,
+  GroupChip,
+  ImpactChip,
+  ReasonChip,
+  ScoreBadge,
+} from "@/components/ui/chips";
 
 export function ScorePopover({ item, onClose }: { item: FeedItem; onClose: () => void }) {
   return (
@@ -63,10 +70,12 @@ export function FeedCard({
   item,
   selected,
   onSelect,
+  onHide,
 }: {
   item: FeedItem;
   selected: boolean;
   onSelect: () => void;
+  onHide?: () => void;
 }) {
   const [popoverOpen, setPopoverOpen] = useState(false);
   const { event } = item;
@@ -113,6 +122,15 @@ export function FeedCard({
         <p className="mt-2 text-body-md text-ink-secondary">{item.reasons[0]}</p>
 
         <div className="mt-3 flex flex-wrap gap-1.5">
+          {item.impact && <ImpactChip impact={item.impact} />}
+          {item.via_group && <GroupChip groupId={item.group_id} />}
+          {item.external && <ExternalSourceChip name={event.source_name} />}
+          {item.urgent && (
+            <span className="inline-flex items-center gap-1 rounded-pill bg-risk-bg px-2 py-1 text-caption text-ink">
+              <span className="h-1.5 w-1.5 rounded-pill bg-primary" />
+              Срочно
+            </span>
+          )}
           <ReasonChip>{EVENT_TYPE_LABELS[event.event_type]}</ReasonChip>
           {event.macro_factors.slice(0, 2).map((mf) => (
             <ReasonChip key={mf}>{MACRO_FACTOR_LABELS[mf]}</ReasonChip>
@@ -120,6 +138,21 @@ export function FeedCard({
           <DirectionChip direction={event.risk_opportunity} />
         </div>
       </div>
+
+      {onHide && (
+        <div className="mt-3 flex justify-end">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onHide();
+            }}
+            className="text-caption text-ink-mute underline hover:text-ink-secondary"
+          >
+            Скрыть
+          </button>
+        </div>
+      )}
     </Card>
   );
 }

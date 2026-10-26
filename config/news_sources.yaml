@@ -1,0 +1,90 @@
+version: "1.0"
+
+defaults:
+  user_agent: "AlfaRadarBot/0.1 (+https://github.com/alfa-hack-2026/alfa-radar)"
+  timeout_seconds: 15
+  max_bytes: 2000000
+  rate_limit_per_minute: 30
+
+# Free, legal collection methods, preferred order: open API > RSS/Atom > HTML scrape.
+# All endpoints below were reachable at build time. HTML scraping is only used for
+# sources that publish no feed and only where robots.txt allows it.
+
+sources:
+  # Individual equity quotes are noisy for business-decision news; disabled by
+  # default. The CBR API source below demonstrates the open-API path.
+  - id: moex_iss
+    name: Московская биржа (ISS)
+    kind: api
+    api: moex_iss
+    enabled: false
+    language: ru
+    tags:
+      default_macro: ["BOND_YIELD", "DEMAND"]
+    options:
+      url: "https://iss.moex.com/iss/engines/stock/markets/shares/boards/TQBR/securities.json?iss.meta=off&iss.only=securities,marketdata&securities.columns=SECID,SHORTNAME&marketdata.columns=SECID,LAST"
+      limit: 10
+
+  - id: cbr_fx
+    name: Банк России (курсы валют)
+    kind: api
+    api: cbr_fx
+    enabled: true
+    language: ru
+    tags:
+      default_macro: ["FX_RATE"]
+    options:
+      url: "https://www.cbr.ru/scripts/XML_daily.asp"
+
+  - id: tass
+    name: ТАСС
+    kind: rss
+    enabled: true
+    language: ru
+    options:
+      url: "https://tass.ru/rss/v2.xml"
+
+  - id: interfax
+    name: Интерфакс
+    kind: rss
+    enabled: true
+    language: ru
+    options:
+      url: "https://www.interfax.ru/rss.asp"
+
+  - id: kommersant
+    name: Коммерсантъ
+    kind: rss
+    enabled: true
+    language: ru
+    options:
+      url: "https://www.kommersant.ru/RSS/news.xml"
+
+  - id: vedomosti
+    name: Ведомости
+    kind: rss
+    enabled: true
+    language: ru
+    options:
+      url: "https://www.vedomosti.ru/rss/news"
+
+  # RBC feed is intermittently slow/blocked from some networks; disabled by default.
+  - id: rbc
+    name: РБК
+    kind: rss
+    enabled: false
+    language: ru
+    options:
+      url: "https://rssexport.rbc.ru/rbcnews/news/30/full.rss"
+
+  # Example HTML scrape source (disabled by default). Only enable if the site
+  # publishes no RSS/API and its robots.txt allows fetching the list + articles.
+  - id: example_scrape
+    name: Example HTML source
+    kind: scrape
+    enabled: false
+    language: ru
+    options:
+      url: "https://example.com/news/"
+      link_pattern: "/news/"
+      limit: 5

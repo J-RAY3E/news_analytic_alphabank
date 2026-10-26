@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import type { Claim, ClaimType } from "@/lib/api/types";
-import { ClaimLabel, FeatureChip, SourceChip } from "@/components/ui/chips";
+import { ClaimLabel, FeatureChip, ImpactChip, SourceChip } from "@/components/ui/chips";
 
 function effectiveType(claim: Claim): ClaimType {
   if (claim.type === "FACT" && claim.source_ids.length === 0) {
@@ -31,11 +31,14 @@ export function ClaimBlock({
     >
       <div className="flex items-center justify-between gap-2">
         <ClaimLabel type={type} />
-        {type === "AI_INFERENCE" && (
-          <span className="text-caption tnum text-ink-mute">
-            Уверенность {claim.confidence.toLocaleString("ru-RU", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </span>
-        )}
+        <span className="flex items-center gap-2">
+          {claim.impact && <ImpactChip impact={claim.impact} />}
+          {(type === "AI_INFERENCE" || type === "HYPOTHESIS") && (
+            <span className="text-caption tnum text-ink-mute">
+              Уверенность {claim.confidence.toLocaleString("ru-RU", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </span>
+          )}
+        </span>
       </div>
       <p className="mt-2 text-body-md text-ink">{claim.text}</p>
       {(claim.source_ids.length > 0 || present.length > 0 || missing.length > 0) && (

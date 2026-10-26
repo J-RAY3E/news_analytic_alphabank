@@ -13,6 +13,7 @@ OPTIONAL_TOOLS = {
     "plan_write",
     "budget_check",
     "get_graph_exposure",
+    "get_group_view",
     "search_bank_analytics",
 }
 

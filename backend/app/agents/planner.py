@@ -47,6 +47,11 @@ class Planner:
                 purpose="Платежные связи и отраслевая экспозиция",
             ),
             PlanStep(
+                tool="get_group_view",
+                params={"company_id": context.company_id},
+                purpose="Контекст группы компаний (Q24/Q25)",
+            ),
+            PlanStep(
                 tool="get_event",
                 params={"event_id": context.event_id},
                 purpose="Нормализованное событие и его источник",

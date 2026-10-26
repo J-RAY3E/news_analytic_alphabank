@@ -1,12 +1,16 @@
-version: "1.0"
+version: "1.1"
+
+# Drop events whose total relevance is below this (relevance guardrail, Q38).
+min_score: 0.10
 
 weights:
-  sector_match: 0.30
-  supply_chain_exposure: 0.20
-  product_match: 0.20
-  geo_match: 0.15
-  scale_weight: 0.10
+  sector_match: 0.27
+  supply_chain_exposure: 0.18
+  product_match: 0.18
+  geo_match: 0.13
+  scale_weight: 0.09
   recency: 0.05
+  event_quality: 0.10
 
 sector:
   exact_division: 1.0
@@ -109,6 +113,35 @@ recency:
   max_age_days: 120
   missing: 0.5
   future: 1.0
+
+event_quality:
+  default_reliability: 0.7
+  noise_penalty: 1.0
+  speculation_penalty: 0.3
+  generic_all_sectors_penalty: 0.05
+  source_reliability:
+    "Банк России (курсы валют)": 1.0
+    "ТАСС": 0.95
+    "Интерфакс": 0.95
+    "Коммерсантъ": 0.9
+    "Ведомости": 0.9
+    "РБК": 0.85
+    "Московская биржа (ISS)": 0.8
+    "Synthetic Wire": 0.6
+    "Synthetic Social": 0.2
+    "User Input": 0.5
+
+external_sources:
+  - "ТАСС"
+  - "Интерфакс"
+  - "Коммерсантъ"
+  - "Ведомости"
+  - "РБК"
+  - "Банк России (курсы валют)"
+  - "Московская биржа (ISS)"
+
+urgency:
+  min_score: 0.7
 
 roles:
   tie_break_tolerance: 0.03

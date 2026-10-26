@@ -119,6 +119,11 @@ def build_company_profiles(
     frame["SYNTHETIC_U"] = frame["SYNTHETIC_U"].map(clean_text)
     frame = frame[frame["SYNTHETIC_U"] != ""]
     frame["REVENUE_COMPANY"] = pd.to_numeric(frame["REVENUE_COMPANY"], errors="coerce")
+    # 1000 is a technical stub for missing revenue (case Q&A #15).
+    revenue_stub = int((frame["REVENUE_COMPANY"] == 1000).sum())
+    frame["REVENUE_COMPANY"] = frame["REVENUE_COMPANY"].where(
+        frame["REVENUE_COMPANY"] != 1000
+    )
 
     duplicates_removed = int(frame.duplicated(subset=["SYNTHETIC_U"]).sum())
     frame = frame.sort_values(
@@ -176,7 +181,14 @@ def build_company_profiles(
     )
     frame["group_size"] = group_sizes.reindex(frame.index).fillna(1).astype(int)
 
-    frame["target_segment"] = (frame["revenue_rub"] >= 15_000_000_000).map(
+    group_revenue = frame.loc[frame["group_id"] != ""].groupby("group_id")[
+        "revenue_rub"
+    ].transform("sum")
+    frame["group_revenue_rub"] = group_revenue.reindex(frame.index).fillna(
+        frame["revenue_rub"]
+    )
+    effective_revenue = frame[["revenue_rub", "group_revenue_rub"]].max(axis=1)
+    frame["target_segment"] = (effective_revenue >= 15_000_000_000).map(
         {True: "LARGE_TARGET", False: "BELOW_TARGET"}
     )
     short_okved = frame["okved_name"].str.slice(0, 70)
@@ -221,6 +233,7 @@ def build_company_profiles(
             "target_segment": frame["target_segment"],
             "group_id": frame["group_id"],
             "group_size": frame["group_size"],
+            "group_revenue_rub": frame["group_revenue_rub"],
             "city": frame["city"],
             "region": frame["region"],
             "missing_okved": frame["missing_okved"],
@@ -229,12 +242,15 @@ def build_company_profiles(
         }
     ).reset_index(drop=True)
 
-    quality = build_quality_report(raw, output, duplicates_removed)
+    quality = build_quality_report(raw, output, duplicates_removed, revenue_stub)
     return ProfileBuildResult(companies=output, quality=quality)
 
 
 def build_quality_report(
-    raw: pd.DataFrame, companies: pd.DataFrame, duplicates_removed: int
+    raw: pd.DataFrame,
+    companies: pd.DataFrame,
+    duplicates_removed: int,
+    revenue_stub: int = 0,
 ) -> dict[str, Any]:
     total = len(companies)
     target = int((companies["target_segment"] == "LARGE_TARGET").sum())
@@ -249,6 +265,7 @@ def build_quality_report(
         "companies": total,
         "target_companies_revenue_ge_15bn": target,
         "share_target": round(target / total, 6) if total else 0.0,
+        "revenue_stub_rows": revenue_stub,
         "missing_okved": int(companies["missing_okved"].sum()),
         "unknown_industry": int(companies["unknown_industry"].sum()),
         "missing_city": int(companies["missing_city"].sum()),

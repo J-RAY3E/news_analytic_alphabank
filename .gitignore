@@ -13,10 +13,6 @@ __pycache__/
 .coverage
 htmlcov/
 
-data/processed/*
-!data/processed/.gitkeep
-data/index/*
-!data/index/.gitkeep
 data/news/*.tmp
 logs/
 *.log

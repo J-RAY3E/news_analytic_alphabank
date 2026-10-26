@@ -220,7 +220,7 @@ def test_planner_includes_plan_write_and_budget_check(tmp_path: Path):
     tools = [step.tool for step in steps]
     assert tools[0] == "plan_write"
     assert tools[1] == "budget_check"
-    assert len(tools) <= 6
+    assert len(tools) <= 7
     assert "search_bank_analytics" in tools
 
 

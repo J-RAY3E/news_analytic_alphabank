@@ -22,6 +22,7 @@ FACTOR_LABELS = {
     "geo_match": "Географическое совпадение",
     "scale_weight": "Масштаб компании",
     "recency": "Актуальность новости",
+    "event_quality": "Качество источника и сигнала",
 }
 
 MACRO_LABELS = {
@@ -341,6 +342,28 @@ def recency(
     )
 
 
+def event_quality(
+    event: NormalizedEvent, config: ScoringConfig
+) -> tuple[float, str]:
+    rules = config.event_quality
+    reliability = rules.source_reliability.get(
+        event.source.name, rules.default_reliability
+    )
+    value = reliability
+    value -= event.noise_score * rules.noise_penalty
+    if event.is_speculation:
+        value -= rules.speculation_penalty
+    if event.sectors and all(str(s).strip().upper() in {"ALL", "ВСЕ", "*"} for s in event.sectors):
+        value -= rules.generic_all_sectors_penalty
+    value = max(0.0, min(value, 1.0))
+    notes = [f"Источник: {event.source.name} (надёжность {reliability:.2f})"]
+    if event.noise_score > 0.3:
+        notes.append(f"шум {event.noise_score:.2f}")
+    if event.is_speculation:
+        notes.append("спекулятивно")
+    return round(value, 6), "; ".join(notes)
+
+
 def score_event(
     company: dict[str, Any],
     event: NormalizedEvent,
@@ -355,6 +378,7 @@ def score_event(
     geo_value, geo_explanation = geo_match(company, event, config, catalog)
     scale_value, scale_explanation = scale_weight(company, config)
     recency_value, recency_explanation = recency(event, config, now=now)
+    quality_value, quality_explanation = event_quality(event, config)
 
     raw = [
         ("sector_match", sector_value, config.weights.sector_match, sector_explanation),
@@ -368,6 +392,7 @@ def score_event(
         ("geo_match", geo_value, config.weights.geo_match, geo_explanation),
         ("scale_weight", scale_value, config.weights.scale_weight, scale_explanation),
         ("recency", recency_value, config.weights.recency, recency_explanation),
+        ("event_quality", quality_value, config.weights.event_quality, quality_explanation),
     ]
     factors = [
         RelevanceFactor(

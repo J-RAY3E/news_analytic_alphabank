@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Workspace } from "@/components/layout/Workspace";
 import { FeedPanel } from "@/components/feed/FeedPanel";
@@ -10,6 +10,8 @@ import { TracePanel } from "@/components/trace/TracePanel";
 import { InsightSectionSkeleton } from "@/components/ui/Skeleton";
 import { Button } from "@/components/ui/Button";
 import { useCompanies, useInsight } from "@/lib/api/hooks";
+import { dataApi } from "@/lib/mocks/api";
+import { DisclaimerBanner } from "@/components/ui/DisclaimerBanner";
 import { useAppState } from "@/lib/store";
 import type { FeedItem, InsightResponse, NormalizedEvent } from "@/lib/api/types";
 
@@ -65,8 +67,35 @@ export default function RadarPage() {
     requestInsight(cardToEvent(item));
   };
 
-  const companyName =
-    companies.data?.find((c) => c.company_id === companyId)?.display_name ?? "Клиент";
+  useEffect(() => {
+    if (!companyId) return;
+    const param = new URLSearchParams(window.location.search).get("insight");
+    if (param) void openHistoryInsight(param);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [companyId]);
+
+  const openHistoryInsight = useCallback(
+    async (insightId: string) => {
+      if (!companyId) return;
+      try {
+        const stored = await dataApi.getInsight(insightId);
+        setInsight(stored);
+        try {
+          const detail = await dataApi.getEvent(stored.event_id);
+          setSelectedEvent(detail.event);
+        } catch {
+          setSelectedEvent(null);
+        }
+      } catch {
+        // ignore: history item could not be loaded
+      }
+    },
+    [companyId]
+  );
+
+  const company =
+    companies.data?.find((c) => c.company_id === companyId) ?? null;
+  const companyName = company?.display_name ?? "Клиент";
 
   const insightContent = () => {
     if (!selectedEvent) {
@@ -113,6 +142,7 @@ export default function RadarPage() {
       <InsightView
         insight={insight}
         event={selectedEvent}
+        company={company}
         companyName={companyName}
         userName={user?.id ?? "guest"}
         onOpenSource={setSourceId}
@@ -122,6 +152,9 @@ export default function RadarPage() {
 
   return (
     <AppShell>
+      <div className="px-4 pt-4 md:px-6">
+        <DisclaimerBanner />
+      </div>
       <Workspace
         feed={
           <FeedPanel

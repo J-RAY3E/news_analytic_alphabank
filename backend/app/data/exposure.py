@@ -98,12 +98,19 @@ def _side_features(
     key: str,
     other: str,
     prefix: str,
+    share_edges: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
     key_prefix = key.removesuffix("_id")
     other_prefix = other.removesuffix("_id")
     subset = edges[edges[key].isin(company_ids)].copy()
     if subset.empty:
         return pd.DataFrame({"company_id": company_ids})
+    # Industry shares, top counterparties and concentration exclude intra-group
+    # transfers (case Q&A #21); totals and intra-group share keep the full subset.
+    if share_edges is not None:
+        share_source = share_edges[share_edges[key].isin(company_ids)].copy()
+    else:
+        share_source = subset
 
     total = subset.groupby(key).agg(
         total_amount=("amount", "sum"),
@@ -112,11 +119,11 @@ def _side_features(
     )
     total.index.name = "company_id"
 
-    denominator = subset.groupby(key)["amount"].transform("sum")
-    subset["_share"] = subset["amount"] / denominator
+    denominator = share_source.groupby(key)["amount"].transform("sum")
+    share_source["_share"] = share_source["amount"] / denominator
 
     division = (
-        subset.groupby(
+        share_source.groupby(
             [key, f"{other_prefix}_division", f"{other_prefix}_section"], as_index=False
         )
         .agg(amount=("amount", "sum"))
@@ -125,14 +132,16 @@ def _side_features(
     division["share"] = division["amount"] / division.groupby(key)["amount"].transform("sum")
 
     section = (
-        subset.groupby([key, f"{other_prefix}_section"], as_index=False)
+        share_source.groupby([key, f"{other_prefix}_section"], as_index=False)
         .agg(amount=("amount", "sum"))
         .sort_values([key, "amount"], ascending=[True, False])
     )
     section["share"] = section["amount"] / section.groupby(key)["amount"].transform("sum")
 
     labels = (
-        subset[[f"{other_prefix}_division", f"{other_prefix}_section", f"{other_prefix}_industry_label"]]
+        share_source[
+            [f"{other_prefix}_division", f"{other_prefix}_section", f"{other_prefix}_industry_label"]
+        ]
         .drop_duplicates()
         .set_index([f"{other_prefix}_division", f"{other_prefix}_section"])
     )
@@ -163,12 +172,12 @@ def _side_features(
     }
 
     counterparties = (
-        subset.groupby([key, other], as_index=False)
+        share_source.groupby([key, other], as_index=False)
         .agg(amount=("amount", "sum"), payment_count=("payment_count", "sum"))
         .sort_values([key, "amount"], ascending=[True, False])
     )
     counterparty_meta = (
-        subset.groupby([key, other], as_index=False)[
+        share_source.groupby([key, other], as_index=False)[
             [f"{other_prefix}_division", f"{other_prefix}_section", f"{other_prefix}_industry_label"]
         ]
         .first()
@@ -247,12 +256,18 @@ def build_graph_features(
     enriched = enrich_edges(edges, counterparties)
     company_ids = pd.Index(companies["company_id"].astype(str).unique(), name="company_id")
 
+    intra_group = (enriched["payer_group"] != "") & (
+        enriched["payer_group"] == enriched["beneficiary_group"]
+    )
+    external = enriched[~intra_group]
+
     supplier_side = _side_features(
         enriched,
         company_ids=company_ids,
         key="payer_id",
         other="beneficiary_id",
         prefix="supplier",
+        share_edges=external,
     )
     client_side = _side_features(
         enriched,
@@ -260,6 +275,7 @@ def build_graph_features(
         key="beneficiary_id",
         other="payer_id",
         prefix="client",
+        share_edges=external,
     )
     features = pd.DataFrame({"company_id": company_ids}).merge(
         supplier_side, on="company_id", how="left"
@@ -313,6 +329,7 @@ def build_graph_features(
                 == payments.rename(columns={"PAYER": "p", "BENEFICIARY": "b"})["b"]
             ).sum()
         ),
+        "intra_group_edges_excluded": int(len(enriched) - len(external)),
         "companies_with_payment_activity": int(active),
         "coverage_share": round(float(active / len(features)), 6) if len(features) else 0.0,
         "known_counterparty_industry_share": round(

@@ -74,19 +74,21 @@ def test_graph_features_shares_and_group_exposure():
     client = json.loads(u1["client_division_shares"])
     assert sum(supplier.values()) == pytest.approx(1.0)
     assert sum(client.values()) == pytest.approx(1.0)
-    assert supplier["41"] == pytest.approx(150 / 210)
-    assert supplier["64"] == pytest.approx(50 / 210)
-    assert supplier["UNKNOWN"] == pytest.approx(10 / 210)
-    assert client["41"] == pytest.approx(0.4)
-    assert client["UNKNOWN"] == pytest.approx(0.6)
+    # Intra-group transfers (U_1 <-> U_2, same group g1) are excluded from shares.
+    assert "41" not in supplier
+    assert supplier["64"] == pytest.approx(round(50 / 60, 6))
+    assert supplier["UNKNOWN"] == pytest.approx(round(10 / 60, 6))
+    assert client["UNKNOWN"] == pytest.approx(1.0)
+    # Intra-group metric still reflects the excluded volume.
     assert u1["supplier_intra_group_share"] == pytest.approx(150 / 210)
     assert u1["client_intra_group_share"] == pytest.approx(0.4)
     assert u1["supplier_unique_counterparties"] == 3
     top = json.loads(u1["supplier_top_industries"])
-    assert top[0]["division"] == "41"
-    assert top[0]["share"] == pytest.approx(150 / 210)
+    assert top[0]["division"] == "64"
+    assert top[0]["share"] == pytest.approx(round(50 / 60, 6))
 
     u4 = frame.loc["U_4"]
     assert bool(u4["has_payment_activity"]) is False
     assert json.loads(u4["supplier_division_shares"]) == {}
     assert result.quality["companies_with_payment_activity"] == 3
+    assert result.quality["intra_group_edges_excluded"] >= 1

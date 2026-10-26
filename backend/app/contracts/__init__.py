@@ -1,6 +1,7 @@
 from app.contracts.models import (
     ClaimType,
     EvidenceClaim,
+    Impact,
     EventType,
     Feedback,
     Figure,
@@ -21,6 +22,7 @@ from app.contracts.models import (
 __all__ = [
     "ClaimType",
     "EvidenceClaim",
+    "Impact",
     "EventType",
     "Feedback",
     "Figure",

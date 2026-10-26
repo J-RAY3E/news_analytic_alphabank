@@ -61,6 +61,11 @@ class CaseContext:
         return value if isinstance(value, dict) else None
 
     @property
+    def group_view(self) -> dict[str, Any] | None:
+        value = self.results.get("get_group_view")
+        return value if isinstance(value, dict) else None
+
+    @property
     def bank_chunks(self) -> list[dict[str, Any]]:
         value = self.results.get("search_bank_analytics")
         return value if isinstance(value, list) else []

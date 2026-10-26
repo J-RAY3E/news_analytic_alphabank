@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { Role } from "@/lib/api/types";
+import { accountById } from "@/lib/demoAccounts";
 
 export interface DemoUser {
   id: string;
@@ -11,6 +12,7 @@ export interface DemoUser {
 
 interface AppState {
   user: DemoUser | null;
+  hydrated: boolean;
   setUserId: (id: string) => void;
   companyId: string | null;
   setCompanyId: (id: string) => void;
@@ -18,7 +20,7 @@ interface AppState {
   setRole: (role: Role) => void;
 }
 
-const STORAGE_KEY = "alfa_radar_state";
+const STORAGE_KEY = "alfa_radar_state_v2";
 
 const AppStateContext = createContext<AppState | null>(null);
 
@@ -26,6 +28,11 @@ interface Persisted {
   userId: string | null;
   companyId: string | null;
   role: Role;
+}
+
+function resolveUser(id: string | null): DemoUser | null {
+  const account = accountById(id);
+  return account ? { id: account.id, name: account.name, role: account.role } : null;
 }
 
 export function AppStateProvider({ children }: { children: React.ReactNode }) {
@@ -39,12 +46,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       const raw = window.localStorage.getItem(STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw) as Persisted;
-        if (parsed.userId) {
-          const found = ["user-ceo", "user-cfo"].includes(parsed.userId)
-            ? { id: parsed.userId, name: parsed.userId === "user-ceo" ? "Директор по стратегии" : "Финансовый директор", role: (parsed.userId === "user-ceo" ? "CEO" : "CFO") as Role }
-            : null;
-          setUser(found);
-        }
+        setUser(resolveUser(parsed.userId));
         if (parsed.companyId) setCompanyIdState(parsed.companyId);
         if (parsed.role) setRoleState(parsed.role);
       }
@@ -56,11 +58,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!hydrated) return;
-    const value: Persisted = {
-      userId: user?.id ?? null,
-      companyId,
-      role,
-    };
+    const value: Persisted = { userId: user?.id ?? null, companyId, role };
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(value));
     } catch {
@@ -69,21 +67,20 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   }, [user, companyId, role, hydrated]);
 
   const setUserId = useCallback((id: string) => {
-    if (id === "user-ceo") setUser({ id, name: "Директор по стратегии", role: "CEO" });
-    else if (id === "user-cfo") setUser({ id, name: "Финансовый директор", role: "CFO" });
-    else setUser(null);
+    setUser(resolveUser(id));
   }, []);
 
   const value = useMemo<AppState>(
     () => ({
       user,
+      hydrated,
       setUserId,
       companyId,
       setCompanyId: setCompanyIdState,
       role,
       setRole: setRoleState,
     }),
-    [user, setUserId, companyId, role]
+    [user, hydrated, setUserId, companyId, role]
   );
 
   return <AppStateContext.Provider value={value}>{children}</AppStateContext.Provider>;

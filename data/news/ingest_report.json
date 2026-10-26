@@ -1,0 +1,45 @@
+{
+  "started_at": "2026-10-26T10:27:51.277224+00:00",
+  "dry_run": false,
+  "sources": {
+    "moex_iss": {
+      "fetched": 5,
+      "new": 0,
+      "duplicates": 5,
+      "errors": []
+    },
+    "cbr_fx": {
+      "fetched": 3,
+      "new": 0,
+      "duplicates": 3,
+      "errors": []
+    },
+    "tass": {
+      "fetched": 5,
+      "new": 2,
+      "duplicates": 3,
+      "errors": []
+    },
+    "interfax": {
+      "fetched": 5,
+      "new": 0,
+      "duplicates": 5,
+      "errors": []
+    },
+    "kommersant": {
+      "fetched": 5,
+      "new": 0,
+      "duplicates": 5,
+      "errors": []
+    },
+    "vedomosti": {
+      "fetched": 5,
+      "new": 0,
+      "duplicates": 5,
+      "errors": []
+    }
+  },
+  "total_new": 2,
+  "total_duplicates": 26,
+  "finished_at": "2026-10-26T10:27:59.093992+00:00"
+}

@@ -54,6 +54,13 @@ def rank_events(
             )
         )
 
+    if config.min_score > 0:
+        candidates = [
+            candidate
+            for candidate in candidates
+            if candidate.relevance.score >= config.min_score
+        ]
+
     candidates.sort(
         key=lambda item: (
             -item.relevance.score,
@@ -77,7 +84,7 @@ def rank_events(
         kept: list[RankedEvent] = []
         for candidate in candidates:
             if all(
-                event_similarity(candidate.event, existing.event) < 0.92
+                event_similarity(candidate.event, existing.event) < 0.88
                 for existing in kept
             ):
                 kept.append(candidate)

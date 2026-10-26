@@ -1,0 +1,99 @@
+# Third-Party Notices
+
+Alfa Radar (Alfa Hack 2026 prototype). This file lists third-party software,
+models, data and services used by the project, with their licenses where known.
+It is informational and does not alter any upstream license terms.
+
+## Backend — Python (`pyproject.toml`)
+
+| Package | Purpose | License |
+| --- | --- | --- |
+| FastAPI | REST API | MIT |
+| Uvicorn | ASGI server | BSD-3-Clause |
+| Pydantic | Data validation | MIT |
+| pydantic-settings | Settings from env | MIT |
+| PyYAML | YAML config | MIT |
+| pandas | Data processing | BSD-3-Clause |
+| pyarrow | Parquet I/O | Apache-2.0 |
+| httpx | HTTP client (URL ingestion) | BSD-3-Clause |
+| openai (Python SDK) | OpenAI-compatible LLM client | Apache-2.0 |
+| rank-bm25 | BM25 retrieval | Apache-2.0 |
+| feedparser | RSS/Atom parsing (news ingestion) | MIT |
+| feedparser-sgmllib | XML/HTML helpers for feedparser | MIT |
+| pypdf | PDF text metadata | BSD-3-Clause |
+| pypdfium2 | PDF rendering (scanned-PDF OCR); bundles PDFium | Apache-2.0 (PDFium: BSD-3-Clause) |
+| Pillow | Image handling during OCR | HPND (Historical Permission Notice and Disclaimer) |
+| python-dotenv | `.env` loading | BSD-3-Clause |
+| pytest | Test runner (dev) | MIT |
+| pytest-cov | Coverage (dev) | MIT |
+
+## Frontend — Node (`frontend/package.json`)
+
+| Package | Purpose | License |
+| --- | --- | --- |
+| Next.js | React framework | MIT |
+| React, React DOM | UI runtime | MIT |
+| @tanstack/react-query | Data fetching/caching | MIT |
+| clsx | Class name utility | MIT |
+| Tailwind CSS | Styling | MIT |
+| PostCSS | CSS tooling | MIT |
+| TypeScript | Types (dev) | Apache-2.0 |
+| ESLint, eslint-config-next | Linting (dev) | MIT |
+
+## Fonts
+
+| Font | Use | License |
+| --- | --- | --- |
+| Inter | Primary UI face (Latin + Cyrillic), self-hosted via `next/font` | SIL Open Font License 1.1 |
+| JetBrains Mono | Agent Trace panel, self-hosted via `next/font` | SIL Open Font License 1.1 |
+
+## AI models
+
+Models are accessed over an OpenAI-compatible gateway and are **not** bundled or
+redistributed with this repository. Only the case's allowed model list is used:
+
+- `google/gemma-4-26b-a4b-it` — extraction (A2) and reasoning (A6)
+- `z-ai/glm-5.3-flash` — failover reasoning
+- `deepseek/deepseek-v4.1-flash` — available reasoning model
+- `moonshotai/kimi-k2.6` — long-context reasoning
+- `qwen/qwen3-vl-30b-a3b-instruct` — vision OCR for scanned research PDFs
+
+Each model is governed by its provider's own terms of use.
+
+## Data
+
+| Data | Origin | Notes |
+| --- | --- | --- |
+| `df_Uid_data_hack.csv`, `df_Uid_payment_hack.csv`, `df_Fid_Uid_link_hack.csv` | Provided with the case (jury data) | Anonymized company, individual and payment records. |
+| `data/raw/*.pdf` (9 documents) | Provided with the case | Alfa-Bank macro research PDFs; extracted to `data/research/` for indexing. |
+| `data/news/synthetic_raw.jsonl`, `data/news/events.jsonl` | Generated for this project | Synthetic news with deliberate noise, duplicates and ambiguity. |
+| `data/research/*.md` | Derived from the provided PDFs | Text transcription with page markers; used for retrieval only. |
+
+No real identification of companies or individuals is performed or intended
+(all case data is anonymized).
+
+## External news sources (runtime collection)
+
+`pipelines/ingest_news.py` can collect publicly available news at runtime from
+free, legally reusable endpoints configured in
+[`config/news_sources.yaml`](config/news_sources.yaml): the Moscow Exchange ISS
+open API, the Bank of Russia public XML feed, and the public RSS/Atom feeds of
+ТАСС, Интерфакс, Коммерсантъ, Ведомости and РБК. Only item metadata (title,
+summary, link, date) is stored. HTML scraping is opt-in, honors `robots.txt`,
+identifies the client via User-Agent and rate-limits per host. No content is
+bundled or redistributed in this repository.
+
+## Services and simulated integrations
+
+- OpenAI-compatible LLM gateway endpoints configured via `LLM_BASE_URL` /
+  `LLM_BASE_URL_FALLBACK` (case-provided development endpoints).
+- No external AI, OCR or multi-agent service is used as a core component.
+
+## Visual design
+
+The color palette was sampled from the public `alfabank.ru` website for a
+hackathon prototype. No Alfa-Bank or Stripe logos, illustrations, proprietary
+fonts or copyrighted assets are bundled. The gradient mesh
+(`frontend/public/mesh.svg`) is an original asset created for this project. The
+UI structure is inspired by a public design analysis and does not reproduce any
+proprietary design system.

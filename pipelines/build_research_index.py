@@ -28,10 +28,14 @@ def main() -> None:
     args.out_dir.mkdir(parents=True, exist_ok=True)
     chunks_path = args.out_dir / "research_chunks.jsonl"
     index.to_jsonl(chunks_path)
+    try:
+        research_dir = str(Path(args.research_dir).resolve().relative_to(ROOT))
+    except ValueError:
+        research_dir = str(args.research_dir)
     manifest = {
         "documents": index.documents(),
         "chunks": len(chunks),
-        "research_dir": str(args.research_dir),
+        "research_dir": research_dir,
     }
     (args.out_dir / "research_manifest.json").write_text(
         json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"

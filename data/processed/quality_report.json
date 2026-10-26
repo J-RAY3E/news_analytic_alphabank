@@ -1,0 +1,61 @@
+{
+  "profile": {
+    "raw_rows": 85525,
+    "duplicates_removed": 11,
+    "companies": 85514,
+    "target_companies_revenue_ge_15bn": 34689,
+    "share_target": 0.405653,
+    "revenue_stub_rows": 601,
+    "missing_okved": 0,
+    "unknown_industry": 0,
+    "missing_city": 0,
+    "missing_region": 0,
+    "exporters": 8570,
+    "companies_in_groups": 85514,
+    "unique_groups": 18092,
+    "section_distribution": {
+      "G": 21389,
+      "L": 15978,
+      "M": 10570,
+      "F": 8187,
+      "I": 6059,
+      "J": 5349,
+      "C": 4277,
+      "H": 4000,
+      "N": 2833,
+      "K": 2159,
+      "Q": 1466,
+      "R": 861,
+      "B": 751,
+      "S": 523,
+      "A": 398,
+      "E": 324,
+      "D": 277,
+      "P": 113
+    },
+    "product_flag_counts": {
+      "CL_PRODUCT_RKO_MARK": 39663,
+      "CL_PRODUCT_GAR_MARK": 2788,
+      "CL_PRODUCT_LOA_MARK": 4945,
+      "CL_PRODUCT_LEA_MARK": 15011,
+      "CL_PRODUCT_DEP_MARK": 4283,
+      "CL_PRODUCT_ZPP_MARK": 26484,
+      "FACTORING_MARK": 213
+    },
+    "revenue_rub": {
+      "min": 0.0,
+      "median": 33605934.0,
+      "mean": 379766753.5929672,
+      "max": 105596467908.0
+    }
+  },
+  "exposure": {
+    "payment_rows_raw": 1380585,
+    "edges_after_aggregation": 1353162,
+    "self_loops_removed": 27406,
+    "intra_group_edges_excluded": 34356,
+    "companies_with_payment_activity": 62757,
+    "coverage_share": 0.73388,
+    "known_counterparty_industry_share": 0.697736
+  }
+}

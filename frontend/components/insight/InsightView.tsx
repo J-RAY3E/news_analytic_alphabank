@@ -1,12 +1,16 @@
 "use client";
 
-import type { InsightResponse, NormalizedEvent } from "@/lib/api/types";
+import { useState } from "react";
+import type { CompanySummary, InsightResponse, NormalizedEvent } from "@/lib/api/types";
 import { CLAIM_TYPE_LABELS, ROLE_LABELS } from "@/lib/api/types";
 import { formatDateTime, formatScore } from "@/lib/utils";
 import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { Toast } from "@/components/ui/Toast";
 import { ClaimBlock } from "@/components/claim/ClaimBlock";
 import { ClaimLabel, CriticBadge, FeatureChip, SourceChip } from "@/components/ui/chips";
 import { FeedbackButtons } from "./FeedbackButtons";
+import { CompanyProfilePanel } from "./CompanyProfilePanel";
 import { ChatPanel } from "@/components/chat/ChatPanel";
 import { IconRadar } from "@/components/ui/icons";
 import type { TraceEvent } from "@/lib/api/types";
@@ -27,18 +31,28 @@ function parseTrace(raw: Record<string, unknown>[] | undefined): TraceEvent[] {
 export function InsightView({
   insight,
   event,
+  company,
   companyName,
   userName,
   onOpenSource,
 }: {
   insight: InsightResponse;
   event: NormalizedEvent | null;
+  company?: CompanySummary | null;
   companyName: string;
   userName: string;
   onOpenSource: (sourceId: string) => void;
 }) {
   const trace = parseTrace(insight.trace);
   const criticFailed = trace.some((t) => t.kind === "CRITIC_CHECK" && t.status === "FAILED");
+  const [toast, setToast] = useState<string | null>(null);
+  const notify = (message: string) => {
+    setToast(message);
+    window.setTimeout(
+      () => setToast((current) => (current === message ? null : current)),
+      2500
+    );
+  };
 
   const allSourceIds = Array.from(
     new Set(
@@ -62,6 +76,8 @@ export function InsightView({
 
   return (
     <div className="space-y-4">
+      {company && <CompanyProfilePanel company={company} compact />}
+
       {criticFailed && (
         <div
           className="rounded-md bg-risk-bg px-4 py-3 text-body-md text-ink"
@@ -100,6 +116,12 @@ export function InsightView({
         return (
           <Card key={section.key} className="p-8">
             <h2 className="text-heading-sm text-ink">{section.heading}</h2>
+            {section.key === "bank_view" && (
+              <p className="mt-1 text-micro text-ink-mute">
+                Раздел содержит только аналитику Альфа-Банка. Внешние выводы помечены метками
+                «Вывод ИИ» и «Гипотеза».
+              </p>
+            )}
             <div className="mt-4 space-y-3">
               {claims.map((claim, i) => (
                 <ClaimBlock key={i} claim={claim} onOpenSource={onOpenSource} />
@@ -148,7 +170,7 @@ export function InsightView({
         </div>
 
         <div className="mt-4 flex flex-wrap gap-4">
-          {(["FACT", "BANK_VIEW", "AI_INFERENCE"] as const).map((t) => (
+          {(["FACT", "BANK_VIEW", "AI_INFERENCE", "HYPOTHESIS"] as const).map((t) => (
             <span key={t} className="inline-flex items-center gap-2">
               <ClaimLabel type={t} />
               <span className="text-micro text-ink-mute">{CLAIM_TYPE_LABELS[t]}</span>
@@ -170,7 +192,43 @@ export function InsightView({
         />
       </Card>
 
-      <ChatPanel onOpenSource={onOpenSource} />
+      <Card className="p-6">
+        <h2 className="text-heading-sm text-ink">Следующие шаги</h2>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Button variant="primary" size="sm" onClick={() => notify("Запрос менеджеру отправлен (демо)")}>
+            Связаться с менеджером
+          </Button>
+          <Button variant="secondary" size="sm" onClick={() => notify("Заявка отправлена (демо)")}>
+            Оставить заявку
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => notify("Обратный звонок запрошен (демо)")}
+          >
+            Запросить обратный звонок
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            disabled={allSourceIds.length === 0}
+            onClick={() => allSourceIds[0] && onOpenSource(allSourceIds[0])}
+          >
+            Открыть источник
+          </Button>
+        </div>
+        <p className="mt-2 text-micro text-ink-mute">
+          Демо-действия: при внедрении ведут в CRM банка.
+        </p>
+      </Card>
+
+      <Toast message={toast} />
+
+      <p className="text-micro text-ink-mute">
+        {insight.disclaimer ?? "Материал не является инвестиционной рекомендацией."}
+      </p>
+
+      <ChatPanel insightId={insight.insight_id} onOpenSource={onOpenSource} />
     </div>
   );
 }

@@ -168,7 +168,7 @@ def test_score_event_contributions_and_bounds():
     )
     assert 0.0 <= result.score <= 1.0
     assert result.config_version == SCORING.version
-    assert len(result.factors) == 6
+    assert len(result.factors) == 7
     assert sum(factor.contribution for factor in result.factors) == pytest.approx(
         result.score, abs=1e-5
     )

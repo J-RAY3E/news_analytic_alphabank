@@ -523,10 +523,364 @@
           }
         }
       }
+    },
+    "/insights": {
+      "get": {
+        "tags": [
+          "insight"
+        ],
+        "summary": "List Insights",
+        "operationId": "list_insights_insights_get",
+        "parameters": [
+          {
+            "name": "company_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Company Id"
+            }
+          },
+          {
+            "name": "role",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Role"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Role"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InsightListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/insight/{insight_id}": {
+      "get": {
+        "tags": [
+          "insight"
+        ],
+        "summary": "Get Insight",
+        "operationId": "get_insight_insight__insight_id__get",
+        "parameters": [
+          {
+            "name": "insight_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Insight Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InsightResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/metrics/budget": {
+      "get": {
+        "tags": [
+          "ops"
+        ],
+        "summary": "Get Budget",
+        "operationId": "get_budget_metrics_budget_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BudgetResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sources/{source_id}": {
+      "get": {
+        "tags": [
+          "insight"
+        ],
+        "summary": "Get Source",
+        "operationId": "get_source_sources__source_id__get",
+        "parameters": [
+          {
+            "name": "source_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Source Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourceResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/insight/{insight_id}/chat": {
+      "post": {
+        "tags": [
+          "insight"
+        ],
+        "summary": "Chat",
+        "operationId": "chat_insight__insight_id__chat_post",
+        "parameters": [
+          {
+            "name": "insight_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Insight Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/metrics": {
+      "get": {
+        "tags": [
+          "ops"
+        ],
+        "summary": "Get Metrics",
+        "operationId": "get_metrics_metrics_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetricsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
+      "BudgetResponse": {
+        "properties": {
+          "day": {
+            "type": "string",
+            "title": "Day"
+          },
+          "spent_rub": {
+            "type": "number",
+            "title": "Spent Rub"
+          },
+          "budget_rub": {
+            "type": "number",
+            "title": "Budget Rub"
+          },
+          "remaining_rub": {
+            "type": "number",
+            "title": "Remaining Rub"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "cache_hits": {
+            "type": "integer",
+            "title": "Cache Hits"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "day",
+          "spent_rub",
+          "budget_rub",
+          "remaining_rub",
+          "model",
+          "cache_hits"
+        ],
+        "title": "BudgetResponse"
+      },
+      "ChatRequest": {
+        "properties": {
+          "question": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Question"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "question"
+        ],
+        "title": "ChatRequest"
+      },
+      "ChatResponse": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "claim": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ClaimResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "text"
+        ],
+        "title": "ChatResponse"
+      },
       "ClaimResponse": {
         "properties": {
           "text": {
@@ -553,6 +907,10 @@
           "confidence": {
             "type": "number",
             "title": "Confidence"
+          },
+          "impact": {
+            "$ref": "#/components/schemas/Impact",
+            "default": "MEDIUM"
           }
         },
         "additionalProperties": false,
@@ -571,7 +929,8 @@
         "enum": [
           "FACT",
           "BANK_VIEW",
-          "AI_INFERENCE"
+          "AI_INFERENCE",
+          "HYPOTHESIS"
         ],
         "title": "ClaimType"
       },
@@ -697,6 +1056,11 @@
           "group_size": {
             "type": "integer",
             "title": "Group Size"
+          },
+          "group_revenue_rub": {
+            "type": "number",
+            "title": "Group Revenue Rub",
+            "default": 0.0
           }
         },
         "additionalProperties": false,
@@ -912,6 +1276,36 @@
           },
           "role": {
             "$ref": "#/components/schemas/Role"
+          },
+          "urgent": {
+            "type": "boolean",
+            "title": "Urgent",
+            "default": false
+          },
+          "impact": {
+            "$ref": "#/components/schemas/Impact",
+            "default": "MEDIUM"
+          },
+          "via_group": {
+            "type": "boolean",
+            "title": "Via Group",
+            "default": false
+          },
+          "group_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group Id"
+          },
+          "external": {
+            "type": "boolean",
+            "title": "External",
+            "default": false
           }
         },
         "additionalProperties": false,
@@ -1075,6 +1469,15 @@
         "type": "object",
         "title": "HTTPValidationError"
       },
+      "Impact": {
+        "type": "string",
+        "enum": [
+          "LOW",
+          "MEDIUM",
+          "HIGH"
+        ],
+        "title": "Impact"
+      },
       "IngestRequest": {
         "properties": {
           "text": {
@@ -1141,6 +1544,28 @@
           "event"
         ],
         "title": "IngestResponse"
+      },
+      "InsightListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/InsightSummary"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "InsightListResponse"
       },
       "InsightRequest": {
         "properties": {
@@ -1240,6 +1665,11 @@
             "type": "array",
             "title": "Scoring Factors"
           },
+          "disclaimer": {
+            "type": "string",
+            "title": "Disclaimer",
+            "default": ""
+          },
           "trace": {
             "items": {
               "additionalProperties": true,
@@ -1269,6 +1699,67 @@
         ],
         "title": "InsightResponse"
       },
+      "InsightSummary": {
+        "properties": {
+          "insight_id": {
+            "type": "string",
+            "title": "Insight Id"
+          },
+          "company_id": {
+            "type": "string",
+            "title": "Company Id"
+          },
+          "event_id": {
+            "type": "string",
+            "title": "Event Id"
+          },
+          "event_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Event Title"
+          },
+          "role": {
+            "$ref": "#/components/schemas/Role"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "relevance_score": {
+            "type": "number",
+            "title": "Relevance Score"
+          },
+          "top_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Top Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "insight_id",
+          "company_id",
+          "event_id",
+          "role",
+          "created_at",
+          "relevance_score"
+        ],
+        "title": "InsightSummary"
+      },
       "MacroFactor": {
         "type": "string",
         "enum": [
@@ -1286,6 +1777,87 @@
           "CREDIT_ACCESS"
         ],
         "title": "MacroFactor"
+      },
+      "MetricsResponse": {
+        "properties": {
+          "generated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Generated At"
+          },
+          "events_total": {
+            "type": "integer",
+            "title": "Events Total"
+          },
+          "insights_total": {
+            "type": "integer",
+            "title": "Insights Total"
+          },
+          "feedback_total": {
+            "type": "integer",
+            "title": "Feedback Total"
+          },
+          "thumbs_up_ratio": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Thumbs Up Ratio"
+          },
+          "source_coverage": {
+            "type": "number",
+            "title": "Source Coverage"
+          },
+          "avg_cost_rub": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avg Cost Rub"
+          },
+          "avg_latency_ms": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avg Latency Ms"
+          },
+          "llm_spent_today_rub": {
+            "type": "number",
+            "title": "Llm Spent Today Rub"
+          },
+          "llm_budget_rub": {
+            "type": "number",
+            "title": "Llm Budget Rub"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "generated_at",
+          "events_total",
+          "insights_total",
+          "feedback_total",
+          "thumbs_up_ratio",
+          "source_coverage",
+          "avg_cost_rub",
+          "avg_latency_ms",
+          "llm_spent_today_rub",
+          "llm_budget_rub"
+        ],
+        "title": "MetricsResponse"
       },
       "NormalizedEvent": {
         "properties": {
@@ -1528,6 +2100,80 @@
           "name"
         ],
         "title": "SourceRef"
+      },
+      "SourceResponse": {
+        "properties": {
+          "source_id": {
+            "type": "string",
+            "title": "Source Id"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "news",
+              "bank",
+              "unknown"
+            ],
+            "title": "Kind"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          },
+          "published_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published At"
+          },
+          "snippet": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Snippet"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "source_id",
+          "kind",
+          "name"
+        ],
+        "title": "SourceResponse"
       },
       "TraceResponse": {
         "properties": {

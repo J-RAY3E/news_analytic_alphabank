@@ -19,6 +19,7 @@ class WeightSet(BaseModel):
     geo_match: float = Field(ge=0.0, le=1.0)
     scale_weight: float = Field(ge=0.0, le=1.0)
     recency: float = Field(ge=0.0, le=1.0)
+    event_quality: float = Field(default=0.0, ge=0.0, le=1.0)
 
     @model_validator(mode="after")
     def weights_sum_to_one(self) -> WeightSet:
@@ -111,6 +112,22 @@ class RecencyRules(BaseModel):
     future: float = Field(ge=0.0, le=1.0)
 
 
+class EventQualityRules(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    default_reliability: float = Field(default=0.7, ge=0.0, le=1.0)
+    noise_penalty: float = Field(default=1.0, ge=0.0, le=2.0)
+    speculation_penalty: float = Field(default=0.3, ge=0.0, le=2.0)
+    generic_all_sectors_penalty: float = Field(default=0.0, ge=0.0, le=2.0)
+    source_reliability: dict[str, float] = Field(default_factory=dict)
+
+
+class UrgencyRules(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    min_score: float = Field(default=0.7, ge=0.0, le=1.0)
+
+
 class RoleRules(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -123,12 +140,16 @@ class ScoringConfig(BaseModel):
 
     version: str
     weights: WeightSet
+    min_score: float = Field(default=0.0, ge=0.0, le=1.0)
     sector: SectorRules
     supply_chain: SupplyChainRules
     product: ProductRules
     geo: GeoRules
     scale: ScaleRules
     recency: RecencyRules
+    external_sources: list[str] = Field(default_factory=list)
+    event_quality: EventQualityRules = EventQualityRules()
+    urgency: UrgencyRules = UrgencyRules()
     roles: RoleRules
 
 

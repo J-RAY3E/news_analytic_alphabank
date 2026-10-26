@@ -58,3 +58,42 @@ export function useFeedback() {
     mutationFn: (body: FeedbackRequest) => dataApi.submitFeedback(body),
   });
 }
+
+export function useBudget() {
+  return useQuery({
+    queryKey: ["budget"],
+    queryFn: () => dataApi.getBudget(),
+    refetchInterval: 60000,
+  });
+}
+
+export function useSource(sourceId: string | null) {
+  return useQuery({
+    queryKey: ["source", sourceId],
+    queryFn: () => dataApi.getSource(sourceId!),
+    enabled: Boolean(sourceId),
+  });
+}
+
+export function useChat() {
+  return useMutation({
+    mutationFn: ({ insightId, question }: { insightId: string; question: string }) =>
+      dataApi.chat(insightId, question),
+  });
+}
+
+export function useInsights(companyId: string | null, role: Role, limit = 8) {
+  return useQuery({
+    queryKey: ["insights", companyId, role, limit],
+    queryFn: () => dataApi.listInsights({ company_id: companyId ?? undefined, role, limit }),
+    enabled: Boolean(companyId),
+  });
+}
+
+export function useMetrics() {
+  return useQuery({
+    queryKey: ["metrics"],
+    queryFn: () => dataApi.getMetrics(),
+    refetchInterval: 60000,
+  });
+}

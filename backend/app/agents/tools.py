@@ -18,6 +18,7 @@ REGISTRY_TOOLS = {
     "budget_check",
     "get_company_profile",
     "get_graph_exposure",
+    "get_group_view",
     "get_event",
     "search_bank_analytics",
     "get_bank_card",
@@ -83,6 +84,30 @@ class ToolRegistry:
 
     def get_graph_exposure(self, company_id: str) -> dict[str, Any] | None:
         return self._graph_row(company_id)
+
+    def get_group_view(self, company_id: str) -> dict[str, Any] | None:
+        company = self.store.company(company_id)
+        group_id = str(company.get("group_id") or "").strip()
+        if not group_id:
+            return None
+        frame = self.store.companies
+        members = frame[frame["group_id"].astype(str) == group_id]
+        rows: list[dict[str, Any]] = []
+        for _, row in members.iterrows():
+            rows.append(
+                {
+                    "company_id": row.get("company_id"),
+                    "industry_label": row.get("industry_label"),
+                    "okved_division": row.get("okved_division"),
+                    "revenue_band": row.get("revenue_band"),
+                }
+            )
+        return {
+            "group_id": group_id,
+            "group_size": len(rows),
+            "group_revenue_rub": float(company.get("group_revenue_rub") or 0.0),
+            "members": rows[:20],
+        }
 
     def get_event(self, event_id: str) -> dict[str, Any]:
         return self.store.event(event_id).model_dump(mode="json")

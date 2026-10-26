@@ -13,6 +13,7 @@ ALLOWED_TOOLS = {
     "budget_check",
     "get_company_profile",
     "get_graph_exposure",
+    "get_group_view",
     "get_event",
     "search_bank_analytics",
     "get_bank_card",

@@ -1,0 +1,60 @@
+{
+  "documents": [
+    {
+      "doc_id": "bond_brief",
+      "title": "Облигационный рынок: брифинг",
+      "pages": 5,
+      "chunks": 7
+    },
+    {
+      "doc_id": "commodities",
+      "title": "Сырьевые рынки: сталь и металлы",
+      "pages": 4,
+      "chunks": 4
+    },
+    {
+      "doc_id": "consumption",
+      "title": "Потребление и потребительский спрос",
+      "pages": 4,
+      "chunks": 7
+    },
+    {
+      "doc_id": "gold",
+      "title": "Золото: дайджест августа 2026",
+      "pages": 8,
+      "chunks": 11
+    },
+    {
+      "doc_id": "inflation",
+      "title": "Инфляция: недельный трекер",
+      "pages": 3,
+      "chunks": 7
+    },
+    {
+      "doc_id": "key_rate",
+      "title": "Ключевая ставка и кредитный рынок",
+      "pages": 4,
+      "chunks": 7
+    },
+    {
+      "doc_id": "macro_1h26",
+      "title": "Макростатистика 1П26",
+      "pages": 5,
+      "chunks": 24
+    },
+    {
+      "doc_id": "macro_7m26",
+      "title": "Макростатистика 7М26",
+      "pages": 4,
+      "chunks": 9
+    },
+    {
+      "doc_id": "tactical_q3_2026",
+      "title": "Тактический взгляд на рынки, III квартал 2026",
+      "pages": 27,
+      "chunks": 40
+    }
+  ],
+  "chunks": 116,
+  "research_dir": "data\\research"
+}

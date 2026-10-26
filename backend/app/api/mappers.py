@@ -12,6 +12,10 @@ from app.api.schemas import (
 )
 from app.contracts import Insight
 
+DISCLAIMER = (
+    "Материал подготовлен сервисом Alfa Radar на основе открытых источников и аналитики Альфа-Банка. Не является инвестиционной рекомендацией."
+)
+
 
 def clean_str(value: Any, default: str = "") -> str:
     if value is None:
@@ -64,6 +68,12 @@ def row_to_company(row: pd.Series | dict[str, Any]) -> CompanySummary:
         fts_countries=clean_list(data.get("fts_countries")),
         group_id=clean_str(data.get("group_id")) or None,
         group_size=int(data.get("group_size") or 1),
+        group_revenue_rub=(
+            0.0
+            if data.get("group_revenue_rub") is None
+            or pd.isna(data.get("group_revenue_rub"))
+            else float(data.get("group_revenue_rub"))
+        ),
     )
 
 
@@ -88,5 +98,6 @@ def insight_to_response(insight: Insight) -> InsightResponse:
             RelevanceFactorResponse(**factor.model_dump())
             for factor in insight.relevance_score.factors
         ],
+        disclaimer=DISCLAIMER,
         trace=[event.model_dump(mode="json") for event in insight.trace],
     )

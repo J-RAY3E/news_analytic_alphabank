@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { MOCK_SOURCES } from "@/lib/mocks/data";
+import { useSource } from "@/lib/api/hooks";
 import { Button } from "@/components/ui/Button";
 import { IconClose, IconExternal } from "@/components/ui/icons";
 
@@ -12,6 +12,8 @@ export function SourceDrawer({
   sourceId: string | null;
   onClose: () => void;
 }) {
+  const sourceQuery = useSource(sourceId);
+
   useEffect(() => {
     if (!sourceId) return;
     const onKey = (e: KeyboardEvent) => {
@@ -22,7 +24,7 @@ export function SourceDrawer({
   }, [sourceId, onClose]);
 
   if (!sourceId) return null;
-  const source = MOCK_SOURCES[sourceId];
+  const source = sourceQuery.data;
 
   return (
     <div className="fixed inset-0 z-50 flex" role="dialog" aria-modal="true" aria-label="Источник">
@@ -40,7 +42,15 @@ export function SourceDrawer({
           </button>
         </div>
         <div className="flex-1 overflow-y-auto p-6 scrollbar-thin">
-          {source ? (
+          {sourceQuery.isError ? (
+            <>
+              <p className="text-mono-trace text-ink-mute">{sourceId}</p>
+              <p className="mt-2 text-body-md text-ink-secondary">
+                Источник временно недоступен. Показан текст из кэша, он может быть
+                неполным.
+              </p>
+            </>
+          ) : source ? (
             <>
               <p className="text-mono-trace text-ink-mute">{sourceId}</p>
               <h3 className="mt-2 text-heading-md text-ink">{source.name}</h3>
@@ -59,6 +69,9 @@ export function SourceDrawer({
                   Документ аналитики Альфа-Банка, страница {source.page}. Полный PDF доступен в
                   библиотеке исследований банка.
                 </p>
+              )}
+              {source.snippet && (
+                <p className="mt-4 text-body-md text-ink-secondary">{source.snippet}</p>
               )}
             </>
           ) : (

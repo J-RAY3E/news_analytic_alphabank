@@ -71,10 +71,18 @@ export function NewsTestInput({
       setUrl("");
       setOpen(false);
       onInsightReady(res.event);
-    } catch {
+    } catch (err) {
       stopStepper();
       setStep(null);
-      setError("Не удалось обработать новость. Попробуйте ещё раз.");
+      const raw = err instanceof Error ? err.message : "";
+      if (/40[13]|unauthor|forbidden|blocked|fetch/i.test(raw) || !raw) {
+        setError(
+          "Не удалось загрузить страницу по ссылке: сайт блокирует автоматический доступ. " +
+            "Вставьте текст новости вручную."
+        );
+      } else {
+        setError(raw);
+      }
     }
   };
 

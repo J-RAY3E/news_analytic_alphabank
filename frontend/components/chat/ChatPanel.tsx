@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/Input";
 import { IconSend } from "@/components/ui/icons";
 import { ClaimBlock } from "@/components/claim/ClaimBlock";
 import type { Claim } from "@/lib/api/types";
+import { useChat } from "@/lib/api/hooks";
 
 interface ChatMessage {
   id: number;
@@ -17,63 +18,16 @@ interface ChatMessage {
 let nextId = 1;
 
 export function ChatPanel({
+  insightId,
   onOpenSource,
 }: {
+  insightId: string;
   onOpenSource?: (sourceId: string) => void;
 }) {
+  const chatMutation = useChat();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [pending, setPending] = useState(false);
-
-  const replyFor = (question: string): ChatMessage[] => {
-    const q = question.toLowerCase();
-    if (q.includes("источник")) {
-      return [
-        {
-          id: nextId++,
-          from: "agent",
-          claim: {
-            text: "Позиция банка: удержание ключевой ставки ожидается до конца III квартала. Полный документ: обзор ключевой ставки Альфа-Банка, страница 2.",
-            type: "BANK_VIEW",
-            source_ids: ["bank:rate_note:p2"],
-            company_features: [],
-            confidence: 0.92,
-          },
-        },
-      ];
-    }
-    if (q.includes("срез") || q.includes("данн")) {
-      return [
-        {
-          id: nextId++,
-          from: "agent",
-          text: "Доступные срезы: по ролям (CEO, CFO, казначей), по продуктам (кредиты, депозиты), по цепочке поставок. Смените роль переключателем в ленте.",
-        },
-      ];
-    }
-    if (q.includes("подробнее") || q.includes("объясн")) {
-      return [
-        {
-          id: nextId++,
-          from: "agent",
-          claim: {
-            text: "Ключевая ставка сохранена на уровне 14,0% годовых, поэтому стоимость новых кредитов для компании останется высокой до следующего заседания ЦБ.",
-            type: "AI_INFERENCE",
-            source_ids: ["news:rate-note-0725"],
-            company_features: ["CL_PRODUCT_LOA_MARK"],
-            confidence: 0.78,
-          },
-        },
-      ];
-    }
-    return [
-      {
-        id: nextId++,
-        from: "agent",
-        text: "Уточните вопрос: могу показать источники, другой срез данных или объяснить вывод подробнее.",
-      },
-    ];
-  };
 
   const send = async (forced?: string) => {
     const question = (forced ?? input).trim();
@@ -81,9 +35,21 @@ export function ChatPanel({
     setMessages((m) => [...m, { id: nextId++, from: "user", text: question }]);
     setInput("");
     setPending(true);
-    await new Promise((r) => setTimeout(r, 800));
-    setMessages((m) => [...m, ...replyFor(question)]);
-    setPending(false);
+    try {
+      const res = await chatMutation.mutateAsync({ insightId, question });
+      if (res.claim) {
+        setMessages((m) => [...m, { id: nextId++, from: "agent", claim: res.claim as Claim }]);
+      } else {
+        setMessages((m) => [...m, { id: nextId++, from: "agent", text: res.text }]);
+      }
+    } catch {
+      setMessages((m) => [
+        ...m,
+        { id: nextId++, from: "agent", text: "Не удалось получить ответ. Попробуйте ещё раз." },
+      ]);
+    } finally {
+      setPending(false);
+    }
   };
 
   const quickActions = [

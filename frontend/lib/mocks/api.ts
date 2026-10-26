@@ -1,5 +1,7 @@
 import { api, USE_MOCKS } from "@/lib/api/client";
 import type {
+  Budget,
+  ChatResponse,
   CompanySummary,
   EventDetailResponse,
   FeedbackRequest,
@@ -7,12 +9,15 @@ import type {
   FeedResponse,
   IngestRequest,
   IngestResponse,
+  InsightListResponse,
   InsightRequest,
   InsightResponse,
+  Metrics,
   Role,
+  SourceInfo,
   TraceResponse,
 } from "@/lib/api/types";
-import { buildMockFeed, buildMockInsight, getMockEvent, MOCK_COMPANIES, MOCK_TRACE } from "./data";
+import { buildMockFeed, buildMockInsight, getMockEvent, MOCK_COMPANIES, MOCK_SOURCES, MOCK_TRACE } from "./data";
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -107,6 +112,20 @@ export const dataApi = {
     return buildMockInsight(company, body.event_id, body.role ?? "CEO");
   },
 
+  getInsight: async (insightId: string): Promise<InsightResponse> => {
+    if (!USE_MOCKS) return api.getInsight(insightId);
+    await delay(200);
+    return buildMockInsight(MOCK_COMPANIES[0], "news:demo", "CEO");
+  },
+
+  listInsights: async (
+    params: { company_id?: string; role?: Role; limit?: number } = {}
+  ): Promise<InsightListResponse> => {
+    if (!USE_MOCKS) return api.listInsights(params);
+    await delay(200);
+    return { items: [], total: 0 };
+  },
+
   getTrace: async (traceId: string): Promise<TraceResponse> => {
     if (!USE_MOCKS) return api.getTrace(traceId);
     await delay(200);
@@ -120,5 +139,58 @@ export const dataApi = {
     if (!USE_MOCKS) return api.submitFeedback(body);
     await delay(300);
     return { stored: true, feedback_id: `fb_${Date.now()}` };
+  },
+
+  getBudget: async (): Promise<Budget> => {
+    if (!USE_MOCKS) return api.getBudget();
+    await delay(150);
+    return {
+      day: new Date().toISOString().slice(0, 10),
+      spent_rub: 214.6,
+      budget_rub: 500,
+      remaining_rub: 285.4,
+      model: "GLM-5.3-Flash",
+      cache_hits: 12,
+    };
+  },
+
+  getMetrics: async (): Promise<Metrics> => {
+    if (!USE_MOCKS) return api.getMetrics();
+    await delay(150);
+    return {
+      generated_at: new Date().toISOString(),
+      events_total: 0,
+      insights_total: 0,
+      feedback_total: 0,
+      thumbs_up_ratio: null,
+      source_coverage: 0,
+      avg_cost_rub: null,
+      avg_latency_ms: null,
+      llm_spent_today_rub: 0,
+      llm_budget_rub: 500,
+    };
+  },
+
+  getSource: async (sourceId: string): Promise<SourceInfo> => {
+    if (!USE_MOCKS) return api.getSource(sourceId);
+    await delay(150);
+    const source = MOCK_SOURCES[sourceId];
+    return {
+      source_id: sourceId,
+      kind: source ? "news" : "unknown",
+      name: source?.name ?? "Источник",
+      url: source?.url ?? null,
+      page: source?.page ?? null,
+      snippet: null,
+    };
+  },
+
+  chat: async (insightId: string, question: string): Promise<ChatResponse> => {
+    if (!USE_MOCKS) return api.chat(insightId, question);
+    await delay(500);
+    return {
+      text: `Демо-ответ на вопрос: «${question}». Для реального анализа отключите моки.`,
+      claim: null,
+    };
   },
 };

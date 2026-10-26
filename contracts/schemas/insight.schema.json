@@ -4,7 +4,8 @@
       "enum": [
         "FACT",
         "BANK_VIEW",
-        "AI_INFERENCE"
+        "AI_INFERENCE",
+        "HYPOTHESIS"
       ],
       "title": "ClaimType",
       "type": "string"
@@ -40,6 +41,10 @@
           "minimum": 0.0,
           "title": "Confidence",
           "type": "number"
+        },
+        "impact": {
+          "$ref": "#/$defs/Impact",
+          "default": "MEDIUM"
         }
       },
       "required": [
@@ -49,6 +54,15 @@
       ],
       "title": "EvidenceClaim",
       "type": "object"
+    },
+    "Impact": {
+      "enum": [
+        "LOW",
+        "MEDIUM",
+        "HIGH"
+      ],
+      "title": "Impact",
+      "type": "string"
     },
     "RelevanceFactor": {
       "additionalProperties": false,

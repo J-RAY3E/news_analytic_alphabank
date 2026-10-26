@@ -11,6 +11,13 @@ class ClaimType(str, Enum):
     FACT = "FACT"
     BANK_VIEW = "BANK_VIEW"
     AI_INFERENCE = "AI_INFERENCE"
+    HYPOTHESIS = "HYPOTHESIS"
+
+
+class Impact(str, Enum):
+    LOW = "LOW"
+    MEDIUM = "MEDIUM"
+    HIGH = "HIGH"
 
 
 class EventType(str, Enum):
@@ -128,6 +135,7 @@ class EvidenceClaim(BaseModel):
     source_ids: list[str] = Field(default_factory=list)
     company_features: list[str] = Field(default_factory=list)
     confidence: float = Field(ge=0.0, le=1.0)
+    impact: Impact = Impact.MEDIUM
 
     @field_validator("source_ids", "company_features")
     @classmethod

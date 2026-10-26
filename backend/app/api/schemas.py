@@ -8,6 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from app.contracts import (
     ClaimType,
     EventType,
+    Impact,
     MacroFactor,
     NormalizedEvent,
     RiskOpportunity,
@@ -37,6 +38,7 @@ class CompanySummary(BaseModel):
     fts_countries: list[str]
     group_id: str | None
     group_size: int
+    group_revenue_rub: float = 0.0
 
 
 class CompanyListResponse(BaseModel):
@@ -82,6 +84,11 @@ class FeedItem(BaseModel):
     factors: list[RelevanceFactorResponse]
     reasons: list[str]
     role: Role
+    urgent: bool = False
+    impact: Impact = Impact.MEDIUM
+    via_group: bool = False
+    group_id: str | None = None
+    external: bool = False
 
 
 class FeedResponse(BaseModel):
@@ -122,6 +129,7 @@ class ClaimResponse(BaseModel):
     source_ids: list[str]
     company_features: list[str]
     confidence: float
+    impact: Impact = Impact.MEDIUM
 
 
 class InsightResponse(BaseModel):
@@ -140,6 +148,7 @@ class InsightResponse(BaseModel):
     basis: list[ClaimResponse]
     relevance_score: float
     scoring_factors: list[RelevanceFactorResponse]
+    disclaimer: str = ""
     trace: list[dict[str, Any]]
 
 
@@ -174,6 +183,77 @@ class FeedbackResponse(BaseModel):
 
     stored: bool
     feedback_id: str
+
+
+class BudgetResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    day: str
+    spent_rub: float
+    budget_rub: float
+    remaining_rub: float
+    model: str
+    cache_hits: int
+
+
+class SourceResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    source_id: str
+    kind: Literal["news", "bank", "unknown"]
+    name: str
+    url: str | None = None
+    page: int | None = None
+    published_at: datetime | None = None
+    snippet: str | None = None
+
+
+class ChatRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    question: str = Field(min_length=1, max_length=2000)
+
+
+class ChatResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    text: str
+    claim: ClaimResponse | None = None
+
+
+class MetricsResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    generated_at: datetime
+    events_total: int
+    insights_total: int
+    feedback_total: int
+    thumbs_up_ratio: float | None
+    source_coverage: float
+    avg_cost_rub: float | None
+    avg_latency_ms: float | None
+    llm_spent_today_rub: float
+    llm_budget_rub: float
+
+
+class InsightSummary(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    insight_id: str
+    company_id: str
+    event_id: str
+    event_title: str | None = None
+    role: Role
+    created_at: datetime
+    relevance_score: float
+    top_reason: str | None = None
+
+
+class InsightListResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    items: list[InsightSummary]
+    total: int
 
 
 class ErrorBody(BaseModel):

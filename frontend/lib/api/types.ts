@@ -1,6 +1,8 @@
 export type Role = "CEO" | "CFO" | "TREASURER" | "CHIEF_ACCOUNTANT" | "OTHER";
 
-export type ClaimType = "FACT" | "BANK_VIEW" | "AI_INFERENCE";
+export type ClaimType = "FACT" | "BANK_VIEW" | "AI_INFERENCE" | "HYPOTHESIS";
+
+export type Impact = "LOW" | "MEDIUM" | "HIGH";
 
 export type EventType =
   | "MONETARY_POLICY"
@@ -68,6 +70,7 @@ export interface CompanySummary {
   fts_countries: string[];
   group_id?: string | null;
   group_size: number;
+  group_revenue_rub?: number;
 }
 
 export interface RelevanceFactor {
@@ -100,6 +103,11 @@ export interface FeedItem {
   factors: RelevanceFactor[];
   reasons: string[];
   role: Role;
+  urgent?: boolean;
+  impact?: Impact;
+  via_group?: boolean;
+  group_id?: string | null;
+  external?: boolean;
 }
 
 export interface FeedResponse {
@@ -151,6 +159,7 @@ export interface Claim {
   source_ids: string[];
   company_features?: string[];
   confidence: number;
+  impact?: Impact;
 }
 
 export type TraceStepKind =
@@ -200,12 +209,42 @@ export interface InsightResponse {
   basis: Claim[];
   relevance_score: number;
   scoring_factors: RelevanceFactor[];
+  disclaimer?: string;
   trace?: Record<string, unknown>[];
 }
 
 export interface TraceResponse {
   trace_id: string;
   events: Record<string, unknown>[];
+}
+
+export interface InsightSummary {
+  insight_id: string;
+  company_id: string;
+  event_id: string;
+  event_title?: string | null;
+  role: Role;
+  created_at: string;
+  relevance_score: number;
+  top_reason?: string | null;
+}
+
+export interface InsightListResponse {
+  items: InsightSummary[];
+  total: number;
+}
+
+export interface Metrics {
+  generated_at: string;
+  events_total: number;
+  insights_total: number;
+  feedback_total: number;
+  thumbs_up_ratio: number | null;
+  source_coverage: number;
+  avg_cost_rub: number | null;
+  avg_latency_ms: number | null;
+  llm_spent_today_rub: number;
+  llm_budget_rub: number;
 }
 
 export interface FeedbackRequest {
@@ -220,6 +259,34 @@ export interface FeedbackRequest {
 export interface FeedbackResponse {
   stored: boolean;
   feedback_id: string;
+}
+
+export interface Budget {
+  day: string;
+  spent_rub: number;
+  budget_rub: number;
+  remaining_rub: number;
+  model: string;
+  cache_hits: number;
+}
+
+export interface SourceInfo {
+  source_id: string;
+  kind: "news" | "bank" | "unknown";
+  name: string;
+  url?: string | null;
+  page?: number | null;
+  published_at?: string | null;
+  snippet?: string | null;
+}
+
+export interface ChatRequest {
+  question: string;
+}
+
+export interface ChatResponse {
+  text: string;
+  claim?: Claim | null;
 }
 
 export interface ErrorBody {
@@ -282,12 +349,26 @@ export const CLAIM_TYPE_LABELS: Record<ClaimType, string> = {
   FACT: "Факт",
   BANK_VIEW: "Позиция банка",
   AI_INFERENCE: "Вывод ИИ",
+  HYPOTHESIS: "Гипотеза",
 };
 
 export const CLAIM_TYPE_TOOLTIPS: Record<ClaimType, string> = {
   FACT: "Подтверждено источником",
   BANK_VIEW: "Основано на аналитике Альфа-Банка",
   AI_INFERENCE: "Сформировано моделью по доступным данным",
+  HYPOTHESIS: "Гипотеза модели о связи или последствии; требует проверки",
+};
+
+export const IMPACT_LABELS: Record<Impact, string> = {
+  LOW: "Низкое",
+  MEDIUM: "Среднее",
+  HIGH: "Высокое",
+};
+
+export const IMPACT_DESCRIPTIONS: Record<Impact, string> = {
+  LOW: "Низкое: фоновый контекст, действий не требуется",
+  MEDIUM: "Среднее: косвенное влияние через контрагентов, сектор или группу",
+  HIGH: "Высокое: прямое влияние на выручку, затраты или ликвидность в течение 30 дней",
 };
 
 export const FACTOR_NAME_LABELS: Record<string, string> = {

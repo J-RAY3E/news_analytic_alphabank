@@ -22,7 +22,7 @@ def test_scoring_config_loads_and_sums_to_one() -> None:
 
 def test_scoring_config_rejects_bad_weight_sum(tmp_path: Path) -> None:
     payload = SCORING.read_text(encoding="utf-8").replace(
-        "sector_match: 0.30", "sector_match: 0.40"
+        "sector_match: 0.27", "sector_match: 0.40"
     )
     target = tmp_path / "scoring.yaml"
     target.write_text(payload, encoding="utf-8")

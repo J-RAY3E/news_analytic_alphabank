@@ -78,7 +78,7 @@ def test_feed_endpoint_scores_are_ordered(client: TestClient):
     scores = [item["relevance_score"] for item in payload["items"]]
     assert scores == sorted(scores, reverse=True)
     assert all(0.0 <= score <= 1.0 for score in scores)
-    assert all(len(item["factors"]) == 6 for item in payload["items"])
+    assert all(len(item["factors"]) == 7 for item in payload["items"])
     assert all(item["reasons"] for item in payload["items"])
     assert all(item["event"]["event_id"].startswith("news:") for item in payload["items"])
 
@@ -125,7 +125,7 @@ def test_insight_pipeline_and_trace(client: TestClient):
     assert payload["bank_view"]
     assert payload["basis"]
     assert 0.0 <= payload["relevance_score"] <= 1.0
-    assert len(payload["scoring_factors"]) == 6
+    assert len(payload["scoring_factors"]) == 7
     assert payload["trace"]
     trace_id = payload["trace"][0]["trace_id"]
     trace = client.get(f"/trace/{trace_id}")
@@ -163,3 +163,51 @@ def test_trace_rejects_path_traversal(client: TestClient):
     assert response.status_code in (400, 404)
     if response.status_code == 400:
         assert response.json()["error"]["code"] == "bad_request"
+
+
+def test_insight_has_disclaimer(client: TestClient):
+    response = client.post(
+        "/insight",
+        json={"company_id": "U_57706", "event_id": "news:syn-001", "role": "CFO"},
+    )
+    assert response.status_code == 200
+    disclaimer = response.json()["disclaimer"]
+    assert "не является инвестиционной рекомендацией" in disclaimer.lower()
+
+
+def test_metrics_endpoint(client: TestClient):
+    response = client.get("/metrics")
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["events_total"] >= 1
+    assert 0.0 <= payload["source_coverage"] <= 1.0
+    assert payload["llm_budget_rub"] == 500
+
+
+def test_company_profile_has_group_revenue(client: TestClient):
+    items = client.get("/companies", params={"limit": 1, "target_only": True}).json()["items"]
+    assert "group_revenue_rub" in items[0]
+    assert "group_size" in items[0]
+
+
+def test_feed_items_have_urgent_flag(client: TestClient):
+    items = client.get(
+        "/feed", params={"company_id": "U_57706", "role": "CFO", "limit": 3}
+    ).json()["items"]
+    assert items
+    assert all("urgent" in item for item in items)
+
+
+def test_insights_history_and_get(client: TestClient):
+    created = client.post(
+        "/insight",
+        json={"company_id": "U_57706", "event_id": "news:syn-001", "role": "CFO"},
+    ).json()
+    listing = client.get("/insights", params={"company_id": "U_57706", "role": "CFO"})
+    assert listing.status_code == 200
+    body = listing.json()
+    assert body["total"] >= 1
+    assert any(item["insight_id"] == created["insight_id"] for item in body["items"])
+    fetched = client.get(f"/insight/{created['insight_id']}")
+    assert fetched.status_code == 200
+    assert fetched.json()["disclaimer"]

@@ -136,7 +136,8 @@ def test_build_company_profiles(catalog, scoring):
     assert "Кредиты" in list(row["product_labels"])
     assert int(row["group_size"]) == 2
     assert row["region"] == "Москва"
-    assert result.quality["target_companies_revenue_ge_15bn"] == 1
+    assert result.quality["target_companies_revenue_ge_15bn"] == 2
+    assert result.quality["revenue_stub_rows"] == 0
     assert result.quality["product_flag_counts"]["CL_PRODUCT_LOA_MARK"] == 1
 
 
@@ -149,3 +150,21 @@ def test_unknown_okved_is_graceful(catalog, scoring):
     assert bool(row["missing_okved"]) is True
     assert bool(row["unknown_industry"]) is True
     assert row["industry_label"] == "Неизвестная отрасль"
+
+
+def test_revenue_stub_is_treated_as_missing(catalog, scoring):
+    frame = raw_frame().iloc[[2]].copy()
+    frame.loc[:, "REVENUE_COMPANY"] = 1000
+    result = build_company_profiles(frame, catalog, scoring)
+    row = result.companies.iloc[0]
+    assert bool(row["has_revenue"]) is False
+    assert row["revenue_rub"] == 0
+    assert result.quality["revenue_stub_rows"] == 1
+
+
+def test_group_revenue_targets_small_member(catalog, scoring):
+    result = build_company_profiles(raw_frame(), catalog, scoring)
+    frame = result.companies.set_index("company_id")
+    # U_2 alone (0.5bn) but grouped with U_1 (20bn) -> group revenue 20.5bn
+    assert frame.loc["U_2", "group_revenue_rub"] == pytest.approx(20_500_000_000)
+    assert frame.loc["U_2", "target_segment"] == "LARGE_TARGET"

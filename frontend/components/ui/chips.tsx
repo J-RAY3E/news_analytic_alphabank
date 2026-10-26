@@ -1,8 +1,10 @@
 import { cn } from "@/lib/utils";
-import type { ClaimType, RiskOpportunity } from "@/lib/api/types";
+import type { ClaimType, Impact, RiskOpportunity } from "@/lib/api/types";
 import {
   CLAIM_TYPE_LABELS,
   CLAIM_TYPE_TOOLTIPS,
+  IMPACT_DESCRIPTIONS,
+  IMPACT_LABELS,
 } from "@/lib/api/types";
 import { IconBank, IconCheck, IconDot, IconExternal, IconSpark } from "./icons";
 
@@ -120,6 +122,11 @@ const CLAIM_STYLES: Record<
     text: "text-ink",
     icon: <IconSpark size={12} />,
   },
+  HYPOTHESIS: {
+    bg: "bg-canvas-track",
+    text: "text-ink-secondary",
+    icon: <IconDot size={10} />,
+  },
 };
 
 export function ClaimLabel({ type }: { type: ClaimType }) {
@@ -135,6 +142,48 @@ export function ClaimLabel({ type }: { type: ClaimType }) {
     >
       {style.icon}
       {CLAIM_TYPE_LABELS[type]}
+    </span>
+  );
+}
+
+const IMPACT_STYLES: Record<Impact, string> = {
+  LOW: "bg-canvas-soft text-ink-secondary",
+  MEDIUM: "bg-blue-bg text-blue-deep",
+  HIGH: "bg-risk-bg text-ink",
+};
+
+export function ImpactChip({ impact }: { impact: Impact }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center rounded-pill px-2 py-[2px] text-caption",
+        IMPACT_STYLES[impact]
+      )}
+      title={IMPACT_DESCRIPTIONS[impact]}
+    >
+      Влияние: {IMPACT_LABELS[impact]}
+    </span>
+  );
+}
+
+export function GroupChip({ groupId }: { groupId?: string | null }) {
+  return (
+    <span
+      className="inline-flex items-center rounded-pill bg-canvas-soft px-2 py-1 text-caption text-blue-deep"
+      title="Событие значимо для компании через связанную компанию группы"
+    >
+      Группа: {groupId ?? "—"} · через связанную компанию
+    </span>
+  );
+}
+
+export function ExternalSourceChip({ name }: { name: string }) {
+  return (
+    <span
+      className="inline-flex items-center rounded-pill bg-canvas-soft px-2 py-1 text-caption text-ink-secondary"
+      title="Публичный внешний источник"
+    >
+      Внешний источник: {name}
     </span>
   );
 }

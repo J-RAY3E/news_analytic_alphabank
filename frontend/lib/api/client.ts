@@ -1,5 +1,7 @@
 import type {
   ApiErrorShape,
+  Budget,
+  ChatResponse,
   CompanySummary,
   EventDetailResponse,
   FeedbackRequest,
@@ -7,9 +9,12 @@ import type {
   FeedResponse,
   IngestRequest,
   IngestResponse,
+  InsightListResponse,
   InsightRequest,
   InsightResponse,
+  Metrics,
   Role,
+  SourceInfo,
   TraceResponse,
 } from "./types";
 
@@ -90,9 +95,33 @@ export const api = {
   createInsight: (body: InsightRequest) =>
     request<InsightResponse>("/insight", { method: "POST", body: JSON.stringify(body) }),
 
+  getInsight: (insightId: string) =>
+    request<InsightResponse>(`/insight/${encodeURIComponent(insightId)}`),
+
+  listInsights: (params: { company_id?: string; role?: Role; limit?: number } = {}) => {
+    const sp = new URLSearchParams();
+    if (params.company_id) sp.set("company_id", params.company_id);
+    if (params.role) sp.set("role", params.role);
+    sp.set("limit", String(params.limit ?? 20));
+    return request<InsightListResponse>(`/insights?${sp}`);
+  },
+
   getTrace: (traceId: string) =>
     request<TraceResponse>(`/trace/${encodeURIComponent(traceId)}`),
 
   submitFeedback: (body: FeedbackRequest) =>
     request<FeedbackResponse>("/feedback", { method: "POST", body: JSON.stringify(body) }),
+
+  getBudget: () => request<Budget>("/metrics/budget"),
+
+  getMetrics: () => request<Metrics>("/metrics"),
+
+  getSource: (sourceId: string) =>
+    request<SourceInfo>(`/sources/${encodeURIComponent(sourceId)}`),
+
+  chat: (insightId: string, question: string) =>
+    request<ChatResponse>(`/insight/${encodeURIComponent(insightId)}/chat`, {
+      method: "POST",
+      body: JSON.stringify({ question }),
+    }),
 };
