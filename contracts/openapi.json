@@ -1670,6 +1670,16 @@
             "title": "Disclaimer",
             "default": ""
           },
+          "product_offer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProductOfferResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "trace": {
             "items": {
               "additionalProperties": true,
@@ -1974,6 +1984,40 @@
           "source"
         ],
         "title": "NormalizedEvent"
+      },
+      "ProductOfferResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "short": {
+            "type": "string",
+            "title": "Short"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason",
+            "default": ""
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "short",
+          "url"
+        ],
+        "title": "ProductOfferResponse"
       },
       "RelevanceFactorResponse": {
         "properties": {

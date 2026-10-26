@@ -195,6 +195,16 @@ class TraceEvent(BaseModel):
     payload: dict[str, Any] = Field(default_factory=dict)
 
 
+class ProductOffer(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: str
+    name: str
+    short: str
+    url: str
+    reason: str = ""
+
+
 class Insight(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -210,6 +220,7 @@ class Insight(BaseModel):
     bank_view: list[EvidenceClaim]
     basis: list[EvidenceClaim]
     relevance_score: RelevanceScore
+    product_offer: ProductOffer | None = None
     trace: list[TraceEvent] = Field(default_factory=list)
 
 

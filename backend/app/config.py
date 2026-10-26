@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     scoring_config: Path = PROJECT_ROOT / "config" / "scoring.yaml"
     industries_config: Path = PROJECT_ROOT / "config" / "industries.yaml"
     llm_config: Path = PROJECT_ROOT / "config" / "llm.yaml"
+    products_config: Path = PROJECT_ROOT / "config" / "products.yaml"
     cors_origins: str = "http://localhost:3000,http://localhost:5173"
 
     llm_enabled: bool = True
@@ -37,7 +38,7 @@ class Settings(BaseSettings):
     llm_model_long: str = "moonshotai/kimi-k2.6"
 
     def model_post_init(self, __context: object) -> None:
-        for name in ("scoring_config", "industries_config", "llm_config"):
+        for name in ("scoring_config", "industries_config", "llm_config", "products_config"):
             setattr(self, name, _resolve_project_path(getattr(self, name)))
 
     def path(self, *parts: str) -> Path:

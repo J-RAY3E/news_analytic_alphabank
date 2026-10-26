@@ -11,6 +11,7 @@ import { ClaimBlock } from "@/components/claim/ClaimBlock";
 import { ClaimLabel, CriticBadge, FeatureChip, SourceChip } from "@/components/ui/chips";
 import { FeedbackButtons } from "./FeedbackButtons";
 import { CompanyProfilePanel } from "./CompanyProfilePanel";
+import { ProductOfferBlock } from "./ProductOfferBlock";
 import { ChatPanel } from "@/components/chat/ChatPanel";
 import { IconRadar } from "@/components/ui/icons";
 import type { TraceEvent } from "@/lib/api/types";
@@ -221,6 +222,8 @@ export function InsightView({
           Демо-действия: при внедрении ведут в CRM банка.
         </p>
       </Card>
+
+      {insight.product_offer && <ProductOfferBlock offer={insight.product_offer} />}
 
       <Toast message={toast} />
 

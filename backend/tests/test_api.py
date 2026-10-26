@@ -211,3 +211,16 @@ def test_insights_history_and_get(client: TestClient):
     fetched = client.get(f"/insight/{created['insight_id']}")
     assert fetched.status_code == 200
     assert fetched.json()["disclaimer"]
+
+
+def test_insight_product_offer_field(client: TestClient):
+    response = client.post(
+        "/insight",
+        json={"company_id": "U_57706", "event_id": "news:syn-001", "role": "CFO"},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert "product_offer" in payload
+    offer = payload["product_offer"]
+    if offer is not None:
+        assert offer["name"] and offer["url"].startswith("https://")

@@ -64,6 +64,40 @@
       "title": "Impact",
       "type": "string"
     },
+    "ProductOffer": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "short": {
+          "title": "Short",
+          "type": "string"
+        },
+        "url": {
+          "title": "Url",
+          "type": "string"
+        },
+        "reason": {
+          "default": "",
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "short",
+        "url"
+      ],
+      "title": "ProductOffer",
+      "type": "object"
+    },
     "RelevanceFactor": {
       "additionalProperties": false,
       "properties": {
@@ -345,6 +379,17 @@
     },
     "relevance_score": {
       "$ref": "#/$defs/RelevanceScore"
+    },
+    "product_offer": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ProductOffer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
     },
     "trace": {
       "items": {

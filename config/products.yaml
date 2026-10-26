@@ -1,0 +1,136 @@
+version: "1.0"
+
+# Native product catalog for the large-business segment (FAQ 50).
+# Names and short taglines reproduced from the public alfabank.ru business menu;
+# urls are placeholders until the real product-page links are provided.
+# `features` maps to client flags in the data (CL_PRODUCT_* / FTS_FLAG);
+# `when_macro` lists the event macro factors that make the offer apt.
+
+products:
+  - id: rko
+    name: "Счёт для бизнеса (РКО)"
+    category: "Расчётный счёт"
+    short: "Откроем за 1 день и онлайн"
+    url: "https://alfabank.ru/"
+    features: ["CL_PRODUCT_RKO_MARK"]
+    when_macro: ["DEMAND", "REGULATION", "TAX"]
+
+  - id: zpp
+    name: "Зарплатный проект"
+    category: "Расчётный счёт"
+    short: "Подключение за 0 ₽ и управление онлайн"
+    url: "https://alfabank.ru/"
+    features: ["CL_PRODUCT_ZPP_MARK"]
+    when_macro: ["LABOR_COST", "INFLATION", "DEMAND", "TAX"]
+
+  - id: kredity
+    name: "Кредит для бизнеса"
+    category: "Кредитование"
+    short: "Пополнить оборотные средства или на развитие"
+    url: "https://alfabank.ru/"
+    features: ["CL_PRODUCT_LOA_MARK"]
+    when_macro: ["KEY_RATE", "INFLATION", "CREDIT_ACCESS", "DEMAND"]
+
+  - id: garantii
+    name: "Банковская гарантия"
+    category: "Кредитование"
+    short: "Контрактные, налоговые, таможенные и другие"
+    url: "https://alfabank.ru/"
+    features: ["CL_PRODUCT_GAR_MARK"]
+    when_macro: ["SUPPLY_CHAIN", "FX_RATE", "CREDIT_ACCESS"]
+
+  - id: faktoring
+    name: "Факторинг"
+    category: "Другие формы финансирования"
+    short: "Деньги сразу после поставки, если вам платят с отсрочкой"
+    url: "https://alfabank.ru/"
+    features: ["FACTORING_MARK"]
+    when_macro: ["SUPPLY_CHAIN", "FX_RATE", "SANCTIONS", "CREDIT_ACCESS"]
+
+  - id: lizing
+    name: "Лизинг"
+    category: "Другие формы финансирования"
+    short: "Транспорт и техника без кредита и оптимизация налогов"
+    url: "https://alfabank.ru/"
+    features: ["CL_PRODUCT_LEA_MARK"]
+    when_macro: ["KEY_RATE", "COMMODITY_PRICE", "CREDIT_ACCESS"]
+
+  - id: depozity
+    name: "Депозиты"
+    category: "Размещение средств"
+    short: "Онлайн на срок от 1 дня"
+    url: "https://alfabank.ru/"
+    features: ["CL_PRODUCT_DEP_MARK"]
+    when_macro: ["KEY_RATE", "INFLATION", "BOND_YIELD"]
+
+  - id: ekvayring
+    name: "Эквайринг"
+    category: "Приём платежей"
+    short: "Приём платежей онлайн и в торговых точках"
+    url: "https://alfabank.ru/"
+    features: []
+    when_macro: ["DEMAND"]
+
+  - id: akkreditiv
+    name: "Аккредитив"
+    category: "Расчёты"
+    short: "Безопасные расчёты в рублях и валюте"
+    url: "https://alfabank.ru/"
+    features: []
+    when_macro: ["SUPPLY_CHAIN", "FX_RATE", "SANCTIONS"]
+
+  - id: vekselya
+    name: "Векселя"
+    category: "Размещение средств"
+    short: "Гарантированный доход и способ расчётов"
+    url: "https://alfabank.ru/"
+    features: []
+    when_macro: ["KEY_RATE", "BOND_YIELD"]
+
+  - id: bivalyut_depozit
+    name: "Бивалютные депозиты"
+    category: "Размещение средств"
+    short: "Повышенный доход и возможность конвертации"
+    url: "https://alfabank.ru/"
+    features: []
+    when_macro: ["FX_RATE", "KEY_RATE"]
+
+  - id: mezhdunarodnye_raschety
+    name: "Международные расчёты"
+    category: "ВЭД"
+    short: "В 8 национальных валютах"
+    url: "https://alfabank.ru/"
+    features: ["FTS_FLAG"]
+    when_macro: ["FX_RATE", "SANCTIONS"]
+
+  - id: konvertaciya
+    name: "Конвертация валют"
+    category: "ВЭД"
+    short: "Онлайн и в 2 клика"
+    url: "https://alfabank.ru/"
+    features: ["FTS_FLAG"]
+    when_macro: ["FX_RATE"]
+
+  - id: valyutny_kontrol
+    name: "Валютный контроль"
+    category: "ВЭД"
+    short: "Помогаем снизить риски нарушения закона"
+    url: "https://alfabank.ru/"
+    features: ["FTS_FLAG"]
+    when_macro: ["FX_RATE", "SANCTIONS", "REGULATION"]
+
+  - id: hedzhirovanie
+    name: "Хеджирование валютных рисков"
+    category: "ВЭД / управление рисками"
+    short: "Защита валютной выручки и контрактов от курсовых колебаний"
+    url: "https://alfabank.ru/"
+    features: ["FTS_FLAG"]
+    when_macro: ["FX_RATE", "SANCTIONS"]
+
+  - id: investbank
+    name: "Инвестиционно-банковские услуги"
+    category: "Инвестбанк"
+    short: "Привлечение акционерного и долгового капитала, ЦФА"
+    url: "https://alfabank.ru/"
+    features: []
+    when_macro: ["BOND_YIELD", "REGULATION"]

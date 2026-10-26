@@ -83,6 +83,14 @@ summary, link, date) is stored. HTML scraping is opt-in, honors `robots.txt`,
 identifies the client via User-Agent and rate-limits per host. No content is
 bundled or redistributed in this repository.
 
+## Product catalog
+
+`config/products.yaml` lists native bank products for the large-business
+segment. Product names and short taglines are reproduced from the public
+alfabank.ru business menu for a hackathon prototype; links are placeholders. No
+Alfa-Bank marketing artwork or copyrighted copy beyond the short product names
+and taglines is bundled.
+
 ## Services and simulated integrations
 
 - OpenAI-compatible LLM gateway endpoints configured via `LLM_BASE_URL` /

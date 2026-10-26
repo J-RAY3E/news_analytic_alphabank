@@ -8,6 +8,7 @@ from app.api.schemas import (
     ClaimResponse,
     CompanySummary,
     InsightResponse,
+    ProductOfferResponse,
     RelevanceFactorResponse,
 )
 from app.contracts import Insight
@@ -99,5 +100,10 @@ def insight_to_response(insight: Insight) -> InsightResponse:
             for factor in insight.relevance_score.factors
         ],
         disclaimer=DISCLAIMER,
+        product_offer=(
+            None
+            if insight.product_offer is None
+            else ProductOfferResponse(**insight.product_offer.model_dump())
+        ),
         trace=[event.model_dump(mode="json") for event in insight.trace],
     )

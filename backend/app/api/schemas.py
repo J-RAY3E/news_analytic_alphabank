@@ -132,6 +132,16 @@ class ClaimResponse(BaseModel):
     impact: Impact = Impact.MEDIUM
 
 
+class ProductOfferResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: str
+    name: str
+    short: str
+    url: str
+    reason: str = ""
+
+
 class InsightResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -149,6 +159,7 @@ class InsightResponse(BaseModel):
     relevance_score: float
     scoring_factors: list[RelevanceFactorResponse]
     disclaimer: str = ""
+    product_offer: ProductOfferResponse | None = None
     trace: list[dict[str, Any]]
 
 

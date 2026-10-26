@@ -297,6 +297,16 @@ Every insight carries a mandatory `disclaimer` ("не является инве�
 relevance score includes an `event_quality` factor (source reliability, noise
 and speculation penalties).
 
+## Native product offer (FAQ 50)
+
+When a product is genuinely apt for the company and the event, the insight shows
+one block labeled **«Реклама»** after the analysis (never inside the claims).
+Selection is relevance-gated in `config/products.yaml` (16 large-business
+products) combined with the event's macro factors and the client's product flags;
+most insights show no offer. Catalog taglines are reproduced from the public
+alfabank.ru business menu; links are placeholders until the real page URLs are
+provided.
+
 ## Security
 
 Summary: allowlisted read-only tools, masking of sensitive fields before any

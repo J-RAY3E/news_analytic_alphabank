@@ -19,6 +19,8 @@ from app.contracts import (
 )
 from app.data.industries import load_industry_catalog
 from app.data.store import DataStore
+from app.products.catalog import load_product_catalog
+from app.services.products import select_offer
 from app.llm.client import LLMClient
 from app.research.index import ResearchIndex, load_research_index
 from app.scoring.config import load_scoring_config
@@ -96,6 +98,12 @@ class InsightOrchestrator:
                 "critic": interpretation.critic_payload,
             },
         )
+        product_offer = select_offer(
+            company,
+            event,
+            load_scoring_config(str(self.settings.scoring_config)),
+            load_product_catalog(str(self.settings.products_config)),
+        )
         insight = Insight(
             insight_id=f"insight:{uuid4().hex[:12]}",
             company_id=company_id,
@@ -108,6 +116,7 @@ class InsightOrchestrator:
             bank_view=interpretation.blocks["bank_view"],
             basis=interpretation.blocks["basis"],
             relevance_score=relevance,
+            product_offer=product_offer,
             trace=context.trace,
         )
         self._persist(insight)

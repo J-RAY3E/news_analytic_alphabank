@@ -189,6 +189,14 @@ export interface TraceEvent {
   payload?: Record<string, unknown>;
 }
 
+export interface ProductOffer {
+  id: string;
+  name: string;
+  short: string;
+  url: string;
+  reason?: string;
+}
+
 export interface InsightRequest {
   company_id: string;
   event_id: string;
@@ -210,6 +218,7 @@ export interface InsightResponse {
   relevance_score: number;
   scoring_factors: RelevanceFactor[];
   disclaimer?: string;
+  product_offer?: ProductOffer | null;
   trace?: Record<string, unknown>[];
 }
 
