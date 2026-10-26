@@ -326,7 +326,7 @@ designed but not enforced in this prototype. Full description:
 
 ## Team
 
-**Team name:** Alfa Radar · Alfa Hack 2026
+**Team name:** IdkML
 
 | Member | Phone | Email |
 | --- | --- | --- |
